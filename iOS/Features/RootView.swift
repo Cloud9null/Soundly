@@ -21,22 +21,22 @@ struct RootView: View {
         .environment(\.soundlySurface,appearance.surface)
         .task { playback.attach(context) }
         .tabViewBottomAccessory {
-            Button { nowPlaying = true } label: {
-                HStack(spacing: 12) {
-                    CoverView(artwork:selected?.artwork,size:36)
-                    VStack(alignment:.leading) {
-                        Text(selected?.title ?? "Your music awaits").font(.subheadline.weight(.semibold)).lineLimit(1)
-                        Text(selected?.artist ?? "No track selected").font(.caption).foregroundStyle(.secondary).lineLimit(1)
-                    }
-                    Spacer()
-                    if selected != nil {
-                        Image(systemName:playback.audio.playing ? "pause.fill" : "play.fill")
-                            .onTapGesture { playback.toggle() }
-                            .accessibilityLabel(playback.audio.playing ? "Pause" : "Play")
-                            .accessibilityAddTraits(.isButton)
-                    } else { Image(systemName:"music.note") }
-                }.padding(.horizontal).padding(.vertical,8).contentShape(Rectangle())
-            }.buttonStyle(.plain).accessibilityLabel(selected == nil ? "Open Now Playing. No track selected" : "Open Now Playing")
+            HStack(spacing:12) {
+                Button { nowPlaying = true } label: {
+                    HStack(spacing:12) {
+                        CoverView(artwork:selected?.artwork,size:36)
+                        VStack(alignment:.leading) {
+                            Text(selected?.title ?? "Your music awaits").font(.subheadline.weight(.semibold)).lineLimit(1)
+                            Text(selected?.artist ?? "No track selected").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                        Spacer()
+                    }.contentShape(Rectangle())
+                }.buttonStyle(.plain).accessibilityLabel(selected == nil ? "Open Now Playing. No track selected" : "Open Now Playing")
+                if selected != nil {
+                    Button(playback.audio.playing ? "Pause" : "Play",systemImage:playback.audio.playing ? "pause.fill" : "play.fill") { playback.toggle() }
+                        .labelStyle(.iconOnly).frame(minWidth:44,minHeight:44)
+                }
+            }.padding(.horizontal).padding(.vertical,8)
         }
         .sheet(isPresented:$nowPlaying) { NowPlayingView() }
         .tint(appearance.accent).preferredColorScheme(appearance.scheme)

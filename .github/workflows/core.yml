@@ -3,8 +3,10 @@ name: Soundly Core
 on:
   push:
     branches: [main, feat/ios-mvp]
+    paths: ["Sources/**", "Tests/**", "Package.swift", ".github/workflows/core.yml"]
   pull_request:
     branches: [main]
+    paths: ["Sources/**", "Tests/**", "Package.swift", ".github/workflows/core.yml"]
   workflow_dispatch:
 
 permissions:

@@ -8,6 +8,7 @@ struct NowPlayingView: View {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
+    @Environment(\.soundlySurface) private var surface
     @State private var position = 0.0
     @State private var dragging = false
     @State private var favorite = false
@@ -52,10 +53,13 @@ struct NowPlayingView: View {
                     }
                     Label("Not Bit-Verified",systemImage:"info.circle").font(.footnote).padding().glassEffect()
                 }.padding(24)
-            }.soundlySurface()
+            }
             .background {
+                ZStack {
+                surface
                 if let artwork = playback.current?.artwork, !reduceTransparency {
                     CoverView(artwork:artwork,size:500).blur(radius:80).opacity(0.25).allowsHitTesting(false)
+                }
                 }
             }
             .navigationTitle("Now Playing").navigationBarTitleDisplayMode(.inline)

@@ -2,8 +2,7 @@ name: Soundly iOS
 on:
   push:
     branches: [main, feat/ios-mvp]
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
 permissions:
   contents: read
 concurrency:

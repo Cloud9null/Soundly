@@ -202,20 +202,16 @@ final class PlaybackController {
         load(position:audio.elapsed,autoplay:audio.playing && !disconnected,recordPlay:false)
     }
 
-    private struct SavedSession: Codable, Sendable {
-        var queue:PlaybackQueue
-        var position:Double
-    }
-    private static func readSession() async -> SavedSession? {
+    private static func readSession() async -> SavedPlaybackSession? {
         await Task.detached {
             guard let url = try? LibraryPaths.base().appendingPathComponent("Playback.json"),
                   let bytes = try? Data(contentsOf:url), bytes.count < 4*1024*1024 else { return nil }
-            return try? JSONDecoder().decode(SavedSession.self,from:bytes)
+            return try? JSONDecoder().decode(SavedPlaybackSession.self,from:bytes)
         }.value
     }
     private func persist() {
         lastPersisted = Date()
-        let saved = SavedSession(queue:queue,position:audio.elapsed)
+        let saved = SavedPlaybackSession(queue:queue,position:audio.elapsed)
         let previous = saveTask
         saveTask = Task {
             await previous?.value
@@ -226,4 +222,9 @@ final class PlaybackController {
             }.value
         }
     }
+}
+
+struct SavedPlaybackSession: Codable, Sendable {
+    var queue:PlaybackQueue
+    var position:Double
 }
