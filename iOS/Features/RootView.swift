@@ -12,16 +12,25 @@ struct RootView: View {
     private var appearance: SoundlyTheme { SoundlyTheme(rawValue: theme) ?? .system }
     var body: some View {
         TabView {
-            Tab("Home", systemImage: "house") { NavigationStack { HomeView(select: select) } }
-            Tab("Library", systemImage: "square.stack") { NavigationStack { LibraryView(select: select) } }
-            Tab("Settings", systemImage: "slider.horizontal.3") { NavigationStack { SettingsView() } }
+            Tab("Home", systemImage: "house") { NavigationStack { HomeView(select: select) }.safeAreaInset(edge:.bottom) { miniPlayer } }
+            Tab("Library", systemImage: "square.stack") { NavigationStack { LibraryView(select: select) }.safeAreaInset(edge:.bottom) { miniPlayer } }
+            Tab("Settings", systemImage: "slider.horizontal.3") { NavigationStack { SettingsView() }.safeAreaInset(edge:.bottom) { miniPlayer } }
         }
         .environment(importer)
         .environment(playback)
         .environment(\.soundlySurface,appearance.surface)
         .task { playback.attach(context) }
-        .tabViewBottomAccessory {
-            HStack(spacing:12) {
+        .sheet(isPresented:$nowPlaying) {
+            NowPlayingView().environment(playback).environment(\.soundlySurface,appearance.surface)
+                .modelContainer(context.container).preferredColorScheme(appearance.scheme)
+        }
+        .tint(appearance.accent).preferredColorScheme(appearance.scheme)
+        .background(appearance.surface)
+        .sensoryFeedback(.selection,trigger:selected?.id)
+        .alert("Playback",isPresented:Binding(get:{playback.error != nil && !nowPlaying},set:{ if !$0 { playback.error = nil } })) { Button("OK",role:.cancel) {} } message: { Text(playback.error ?? "") }
+    }
+    private var miniPlayer: some View {
+        HStack(spacing:12) {
                 Button { nowPlaying = true } label: {
                     HStack(spacing:12) {
                         CoverView(artwork:selected?.artwork,size:36)
@@ -31,21 +40,12 @@ struct RootView: View {
                         }
                         Spacer()
                     }.contentShape(Rectangle())
-                }.buttonStyle(.plain).accessibilityLabel(selected == nil ? "Open Now Playing. No track selected" : "Open Now Playing")
+                }.buttonStyle(.plain).accessibilityIdentifier("miniPlayerOpen").accessibilityLabel(selected == nil ? "Open Now Playing. No track selected" : "Open Now Playing")
                 if selected != nil {
                     Button(playback.audio.playing ? "Pause" : "Play",systemImage:playback.audio.playing ? "pause.fill" : "play.fill") { playback.toggle() }
                         .labelStyle(.iconOnly).frame(minWidth:44,minHeight:44)
                 }
-            }.padding(.horizontal).padding(.vertical,8)
-        }
-        .sheet(isPresented:$nowPlaying) {
-            NowPlayingView().environment(playback).environment(\.soundlySurface,appearance.surface)
-                .modelContainer(context.container).preferredColorScheme(appearance.scheme)
-        }
-        .tint(appearance.accent).preferredColorScheme(appearance.scheme)
-        .background(appearance.surface)
-        .sensoryFeedback(.selection,trigger:selected?.id)
-        .alert("Playback",isPresented:Binding(get:{playback.error != nil && !nowPlaying},set:{ if !$0 { playback.error = nil } })) { Button("OK",role:.cancel) {} } message: { Text(playback.error ?? "") }
+            }.padding(12).glassEffect(in:.rect(cornerRadius:20)).padding(.horizontal,12).padding(.bottom,8)
     }
     private func select(_ song: Song) { playback.play(song,within:songs); nowPlaying = true }
 }

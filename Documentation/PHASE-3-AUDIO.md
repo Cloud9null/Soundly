@@ -44,3 +44,9 @@ Logo proposals are preview-only until the owner chooses a primary. The existing 
 - https://developer.apple.com/documentation/mediaplayer/mpremotecommandcenter
 - https://developer.apple.com/documentation/mediaplayer/mpnowplayinginfopropertyexcludefromsuggestions
 - https://developer.apple.com/documentation/avfaudio/avaudiosession/mediaserviceswereresetnotification
+
+## Integrity issues found during simulator verification
+
+The first full app test run exposed three library test-process crashes with NSNumber-to-NSString casts. The persisted Song attribute named `hash` collided with a reserved Core Data/NSObject property. It is renamed to `fileHash`, with `originalName: "hash"` retained for migration mapping; no existing library files or stores are deleted. Original file-byte hashes and deduplication semantics are unchanged. Import, nested-folder and persistent-store tests must pass after this correction.
+
+The UI test also exposed an inaccessible mini-player on the Settings tab. The mini-player now uses a native SwiftUI safe-area inset above each tab's content with actual Liquid Glass and a stable accessibility identifier; its navigation and transport controls remain separate. The navigation test still requires it to exist and open Now Playing. A native screenshot is attempted even if a test fails, so failures can be visually reviewed.

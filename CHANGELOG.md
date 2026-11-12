@@ -26,3 +26,5 @@ An iOS app target, importer, player and IPA are pending later phases.
 - Expanded to twelve themes with distinct surfaces/accents and separated mini-player transport from navigation.
 - Added queue/seek regression tests and offline WAV/ALAC PCM graph tests.
 - Gapless transitions, physical output verification and lock-screen artwork remain pending.
+- Fixed a reserved `hash` storage-property collision discovered by actual library tests; renamed the persisted attribute to fileHash with migration mapping.
+- Made the native glass mini-player independently visible/accessibile in every tab and retained its navigation UI assertion.

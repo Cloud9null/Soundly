@@ -4,7 +4,7 @@ import SwiftData
 @Model
 final class Song {
     @Attribute(.unique) var id: UUID
-    @Attribute(.unique) var hash: String
+    @Attribute(.unique, originalName:"hash") var fileHash: String
     var filename: String
     var title: String
     var artist: String
@@ -28,7 +28,7 @@ final class Song {
     var available: Bool
     var originalFolder: String
     init(_ item: ImportedSong) {
-        id = UUID(); hash = item.hash; filename = item.filename
+        id = UUID(); fileHash = item.hash; filename = item.filename
         title = item.metadata.title; artist = item.metadata.artist; album = item.metadata.album
         albumArtist = item.metadata.albumArtist; genre = item.metadata.genre; composer = item.metadata.composer
         trackNumber = item.metadata.track; discNumber = item.metadata.disc
@@ -71,16 +71,16 @@ enum LibraryPaths {
 @ModelActor
 actor LibraryWriter {
     func contains(_ hash: String) throws -> Bool {
-        var q = FetchDescriptor<Song>(predicate: #Predicate { $0.hash == hash }); q.fetchLimit = 1
+        var q = FetchDescriptor<Song>(predicate: #Predicate { $0.fileHash == hash }); q.fetchLimit = 1
         return try modelContext.fetchCount(q) > 0
     }
     func existingFilename(_ hash: String) throws -> String? {
-        var q = FetchDescriptor<Song>(predicate: #Predicate { $0.hash == hash }); q.fetchLimit = 1
+        var q = FetchDescriptor<Song>(predicate: #Predicate { $0.fileHash == hash }); q.fetchLimit = 1
         return try modelContext.fetch(q).first?.filename
     }
     func insert(_ item: ImportedSong) throws -> Bool {
         let hash = item.hash
-        var q = FetchDescriptor<Song>(predicate: #Predicate { $0.hash == hash }); q.fetchLimit = 1
+        var q = FetchDescriptor<Song>(predicate: #Predicate { $0.fileHash == hash }); q.fetchLimit = 1
         if let existing = try modelContext.fetch(q).first {
             existing.filename = item.filename; existing.available = true
             try modelContext.save()
@@ -112,7 +112,7 @@ actor LibraryWriter {
                 song.duration = m.duration; song.sampleRate = m.rate
                 song.bitDepth = m.bits; song.channels = m.channels; song.codec = m.codec
                 if let data = m.artwork {
-                    let key = song.hash + ".jpg"
+                    let key = song.fileHash + ".jpg"
                     if let target = try? LibraryPaths.directory("Artwork").appendingPathComponent(key),
                        (try? MetadataReader.saveArtwork(data,to:target)) != nil { song.artwork = key }
                 }

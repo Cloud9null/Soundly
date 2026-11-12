@@ -37,7 +37,7 @@ final class LibraryIntegrationTests: XCTestCase {
         XCTAssertEqual(song.sampleRate,44100); XCTAssertEqual(song.bitDepth,16); XCTAssertEqual(song.channels,2)
         XCTAssertEqual(song.codec,"PCM")
         XCTAssertTrue(FileManager.default.fileExists(atPath:try LibraryPaths.directory("Music").appendingPathComponent(song.filename).path))
-        XCTAssertEqual(song.hash.count,64)
+        XCTAssertEqual(song.fileHash.count,64)
         let internalURL = try LibraryPaths.directory("Music").appendingPathComponent(song.filename)
         try FileManager.default.removeItem(at:internalURL)
         let repaired = await importer.run([url]) { _ in }

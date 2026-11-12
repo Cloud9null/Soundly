@@ -10,7 +10,8 @@ final class NavigationTests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Library"].exists)
         app.tabBars.buttons["Settings"].tap()
         XCTAssertTrue(app.descendants(matching:.any)["themePicker"].exists)
-        app.buttons["Open Now Playing. No track selected"].tap()
+        XCTAssertTrue(app.buttons["miniPlayerOpen"].waitForExistence(timeout:5))
+        app.buttons["miniPlayerOpen"].tap()
         XCTAssertTrue(app.staticTexts["Nothing playing"].waitForExistence(timeout: 3))
         app.buttons["Done"].tap()
     }
