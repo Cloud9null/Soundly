@@ -1,0 +1,57 @@
+name: Soundly iOS
+on:
+  push:
+    branches: [feat/ios-mvp, main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 30
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Toolchain and reproducible project
+        run: |
+          xcodebuild -version
+          python3 Scripts/generate_project.py
+          git diff --exit-code -- Soundly.xcodeproj
+      - name: Domain tests
+        run: swift test
+      - name: Device build (unsigned)
+        run: xcodebuild -project Soundly.xcodeproj -scheme Soundly -configuration Release -destination 'generic/platform=iOS' -derivedDataPath build/device CODE_SIGNING_ALLOWED=NO build
+      - name: Select available iOS 26 simulator
+        run: |
+          python3 - <<'PY'
+          import json,subprocess,os
+          runtimes=json.loads(subprocess.check_output(['xcrun','simctl','list','devices','available','--json']))['devices']
+          devices=[d for r,ds in runtimes.items() if 'iOS-26' in r for d in ds if d['name'].startswith('iPhone')]
+          assert devices, 'No iOS 26 iPhone simulator installed'
+          with open(os.environ['GITHUB_ENV'],'a') as f: f.write('SIMULATOR_ID='+devices[0]['udid']+'\n')
+          PY
+      - name: App integration and UI tests
+        run: xcodebuild -project Soundly.xcodeproj -scheme Soundly -configuration Debug -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -derivedDataPath build/simulator -resultBundlePath build/Tests.xcresult CODE_SIGNING_ALLOWED=NO test
+      - name: Package device build for later signing (not an installation test)
+        run: |
+          mkdir -p build/ipa/Payload
+          cp -R build/device/Build/Products/Release-iphoneos/Soundly.app build/ipa/Payload/
+          cd build/ipa
+          zip -qr ../Soundly-unsigned.ipa Payload
+      - name: Upload unsigned app and test evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always() && !cancelled()
+        continue-on-error: true
+        with:
+          name: soundly-ios
+          path: |
+            build/Soundly-unsigned.ipa
+            build/Tests.xcresult
+          retention-days: 3
