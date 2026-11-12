@@ -53,6 +53,7 @@ final class PlaybackController {
     func resume() {
         guard current != nil else { return }
         resumeAfterInterruption = false
+        if audio.duration == 0 { load(); return }
         submit { [transport] in try await transport.resume() }
     }
     func pause() {

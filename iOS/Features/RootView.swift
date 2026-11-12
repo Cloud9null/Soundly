@@ -38,11 +38,14 @@ struct RootView: View {
                 }
             }.padding(.horizontal).padding(.vertical,8)
         }
-        .sheet(isPresented:$nowPlaying) { NowPlayingView() }
+        .sheet(isPresented:$nowPlaying) {
+            NowPlayingView().environment(playback).environment(\.soundlySurface,appearance.surface)
+                .modelContainer(context.container).preferredColorScheme(appearance.scheme)
+        }
         .tint(appearance.accent).preferredColorScheme(appearance.scheme)
         .background(appearance.surface)
         .sensoryFeedback(.selection,trigger:selected?.id)
-        .alert("Playback",isPresented:Binding(get:{playback.error != nil},set:{ if !$0 { playback.error = nil } })) { Button("OK",role:.cancel) {} } message: { Text(playback.error ?? "") }
+        .alert("Playback",isPresented:Binding(get:{playback.error != nil && !nowPlaying},set:{ if !$0 { playback.error = nil } })) { Button("OK",role:.cancel) {} } message: { Text(playback.error ?? "") }
     }
     private func select(_ song: Song) { playback.play(song,within:songs); nowPlaying = true }
 }

@@ -24,6 +24,7 @@ struct AudioObservation: Sendable {
     var decoderRepresentation = "Not observed"
     var route = "Not observed"
     var routeTypes: [String] = []
+    var rateRequestNote: String?
 }
 
 /// Serialized control plane. AVFoundation schedules/decodes the file on its own workers.
@@ -38,6 +39,7 @@ actor AudioTransport {
     private var ended = false
     private var playing = false
     private var attached = false
+    private var rateRequestNote: String?
 
     func load(_ track: PlaybackTrack, position: Double = 0, autoplay: Bool = true) throws -> AudioObservation {
         guard track.filename == URL(fileURLWithPath:track.filename).lastPathComponent,
@@ -55,7 +57,9 @@ actor AudioTransport {
         let session = AVAudioSession.sharedInstance()
         if active { try session.setActive(false); active = false }
         try session.setCategory(.playback,mode:.default,options:[])
-        try session.setPreferredSampleRate(source.processingFormat.sampleRate)
+        rateRequestNote = nil
+        do { try session.setPreferredSampleRate(source.processingFormat.sampleRate) }
+        catch { rateRequestNote = "The native-rate request was rejected. Playback uses the session rate reported below." }
         try session.setActive(true); active = true
         if !attached { engine.attach(player); attached = true }
         engine.disconnectNodeOutput(player)
@@ -125,6 +129,7 @@ actor AudioTransport {
     }
     func observation() -> AudioObservation {
         var value = AudioObservation()
+        value.rateRequestNote = rateRequestNote
         value.playing = playing; value.ended = ended
         if let file {
             let format = file.processingFormat

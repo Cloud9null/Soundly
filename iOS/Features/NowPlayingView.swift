@@ -18,6 +18,7 @@ struct NowPlayingView: View {
                 VStack(spacing:24) {
                     CoverView(artwork:playback.current?.artwork,size:260)
                     Text(playback.current?.title ?? "Nothing playing").font(.title2.bold()).multilineTextAlignment(.center)
+                    if let error = playback.error { Text(error).font(.footnote).foregroundStyle(.red) }
                     if let song = playback.current {
                         Text(song.artist).font(.title3).foregroundStyle(.secondary)
                         Text(song.album).foregroundStyle(.secondary)
@@ -120,6 +121,7 @@ struct AudioDiagnosticsView: View {
             Section("Audio session — API reported") {
                 LabeledContent("Effective session rate",value:rate(playback.audio.sessionRate))
                 LabeledContent("Output channels",value:playback.audio.sessionChannels > 0 ? "\(playback.audio.sessionChannels)" : "Unknown")
+                if let note = playback.audio.rateRequestNote { Text(note).font(.footnote) }
                 Text(playback.audio.route)
                 Text(playback.audio.routeTypes.joined(separator:", ")).font(.caption)
             }
