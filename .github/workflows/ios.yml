@@ -38,9 +38,16 @@ jobs:
           PY
       - name: App integration and UI tests
         run: xcodebuild -project Soundly.xcodeproj -scheme Soundly -configuration Debug -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -derivedDataPath build/simulator -resultBundlePath build/Tests.xcresult CODE_SIGNING_ALLOWED=NO test
+      - name: Package device build for later signing (not an installation test)
+        run: |
+          mkdir -p build/ipa/Payload
+          cp -R build/device/Build/Products/Release-iphoneos/Soundly.app build/ipa/Payload/
+          cd build/ipa
+          zip -qr ../Soundly-unsigned.ipa Payload
       - name: Capture native Home for visual review
         if: always() && !cancelled()
         continue-on-error: true
+        timeout-minutes: 2
         run: |
           if [ -n "${SIMULATOR_ID:-}" ]; then
             xcrun simctl boot "$SIMULATOR_ID" || true
@@ -50,12 +57,6 @@ jobs:
             sleep 2
             xcrun simctl io "$SIMULATOR_ID" screenshot build/Home.png
           fi
-      - name: Package device build for later signing (not an installation test)
-        run: |
-          mkdir -p build/ipa/Payload
-          cp -R build/device/Build/Products/Release-iphoneos/Soundly.app build/ipa/Payload/
-          cd build/ipa
-          zip -qr ../Soundly-unsigned.ipa Payload
       - name: Upload unsigned app and test evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always() && !cancelled()
