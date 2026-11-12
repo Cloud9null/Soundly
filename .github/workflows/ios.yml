@@ -1,7 +1,7 @@
 name: Soundly iOS
 on:
   push:
-    branches: [feat/ios-mvp, main]
+    branches: [main]
   pull_request:
     branches: [main]
 permissions:
@@ -39,6 +39,10 @@ jobs:
           PY
       - name: App integration and UI tests
         run: xcodebuild -project Soundly.xcodeproj -scheme Soundly -configuration Debug -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -derivedDataPath build/simulator -resultBundlePath build/Tests.xcresult CODE_SIGNING_ALLOWED=NO test
+      - name: Capture native Home for visual review
+        run: |
+          xcrun simctl launch "$SIMULATOR_ID" app.soundly.player
+          xcrun simctl io "$SIMULATOR_ID" screenshot build/Home.png
       - name: Package device build for later signing (not an installation test)
         run: |
           mkdir -p build/ipa/Payload
@@ -54,4 +58,5 @@ jobs:
           path: |
             build/Soundly-unsigned.ipa
             build/Tests.xcresult
+            build/Home.png
           retention-days: 3
