@@ -74,8 +74,18 @@ actor LibraryWriter {
         var q = FetchDescriptor<Song>(predicate: #Predicate { $0.hash == hash }); q.fetchLimit = 1
         return try modelContext.fetchCount(q) > 0
     }
+    func existingFilename(_ hash: String) throws -> String? {
+        var q = FetchDescriptor<Song>(predicate: #Predicate { $0.hash == hash }); q.fetchLimit = 1
+        return try modelContext.fetch(q).first?.filename
+    }
     func insert(_ item: ImportedSong) throws -> Bool {
-        if try contains(item.hash) { return false }
+        let hash = item.hash
+        var q = FetchDescriptor<Song>(predicate: #Predicate { $0.hash == hash }); q.fetchLimit = 1
+        if let existing = try modelContext.fetch(q).first {
+            existing.filename = item.filename; existing.available = true
+            try modelContext.save()
+            return false
+        }
         modelContext.insert(Song(item))
         do { try modelContext.save(); return true }
         catch { modelContext.rollback(); throw error }

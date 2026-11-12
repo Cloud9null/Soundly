@@ -38,6 +38,12 @@ final class LibraryIntegrationTests: XCTestCase {
         XCTAssertEqual(song.codec,"PCM")
         XCTAssertTrue(FileManager.default.fileExists(atPath:try LibraryPaths.directory("Music").appendingPathComponent(song.filename).path))
         XCTAssertEqual(song.hash.count,64)
+        let internalURL = try LibraryPaths.directory("Music").appendingPathComponent(song.filename)
+        try FileManager.default.removeItem(at:internalURL)
+        let repaired = await importer.run([url]) { _ in }
+        XCTAssertEqual(repaired.restored,1)
+        XCTAssertTrue(FileManager.default.fileExists(atPath:internalURL.path))
+        XCTAssertEqual(try db.mainContext.fetchCount(FetchDescriptor<Song>()),1)
     }
     func testCorruptFileDoesNotCreateLibraryRow() async throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString+".flac")
@@ -97,4 +103,24 @@ final class LibraryIntegrationTests: XCTestCase {
         var metadata = MusicMetadata()
         XCTAssertThrowsError(try FLACMetadata.read(url,into:&metadata))
     }
+    func testFLACSourceDepthAndUnicodeVorbisComments() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at:url) }
+        var info = [UInt8](repeating:0,count:34)
+        let rate = 96000
+        info[10] = UInt8(rate >> 12); info[11] = UInt8((rate >> 4) & 255)
+        info[12] = UInt8((rate & 15) << 4 | 1 << 1 | 1)
+        info[13] = 7 << 4 // (24 - 1) low four bits; integer source depth 24.
+        func le(_ n:Int)->[UInt8] { (0..<4).map { UInt8((n >> ($0*8)) & 255) } }
+        func string(_ s:String)->[UInt8] { let b = Array(s.utf8); return le(b.count)+b }
+        let comments = string("Soundly test") + le(2) + string("TITLE=音楽 — Prueba") + string("ARTIST=Björk")
+        let header:[UInt8] = [0x84,UInt8(comments.count >> 16),UInt8((comments.count >> 8) & 255),UInt8(comments.count & 255)]
+        try Data(Array("fLaC".utf8)+[0,0,0,34]+info+header+comments).write(to:url)
+        var metadata = MusicMetadata()
+        try FLACMetadata.read(url,into:&metadata)
+        XCTAssertEqual(metadata.bits,24); XCTAssertEqual(metadata.rate,96000)
+        XCTAssertEqual(metadata.channels,2); XCTAssertEqual(metadata.title,"音楽 — Prueba")
+        XCTAssertEqual(metadata.artist,"Björk")
+    }
+
 }

@@ -14,13 +14,13 @@ The initial Phase 1 commit 9035c8b080c6ef97875897fd67355ac3e70685c4 passed the u
 
 - Local SwiftData store explicitly disables CloudKit. Worker ModelActor handles import writes.
 - Native Files multi-file picker and separate folder picker; scoped resources, coordinated read/copy, recursive accessible folder walk, symlink/package skipping.
-- Bounded 1 MiB streaming copy and SHA-256, staging/final move, duplicate lookup, insertion rollback cleanup. Source extension is an initial filter; AVAudioFile must decode a frame and report supported lossless/PCM codec before registration. AAC M4A is rejected.
+- Bounded 1 MiB streaming copy and SHA-256, staging/final move, duplicate lookup, insertion rollback cleanup; reimport restores missing copies without duplicating the record. Source extension is an initial filter; AVAudioFile must decode a frame and report supported lossless/PCM codec before registration. AAC M4A is rejected.
 - Cancellation checked during chunks, metadata blocks and enumeration; counters report imported, duplicate, error and cancellation totals. Cancellation preserves finished imports.
 - AVFoundation metadata plus bounded FLAC STREAMINFO/Vorbis/PICTURE parser; Unicode fallback filenames; source bit depth remains unknown when unavailable. ID3 and MP4 common fields, album artist, composer, genre and track/disc tags handled where exposed. Unusual vendor tags and repeated multi-artist semantics need further fixtures.
 - Bounded thumbnail generation and in-memory artwork cache. Search through database predicate, alphabetical/date sorting, favorites filter, album/artist/folder browsing, persistent favorite changes.
 - Local rescan refreshes available metadata and artwork, marks missing files, and preserves records/favorites/history. It does not scan external sources again without a new user selection.
 - Settings shows imported-folder labels, track count and imported music bytes. Music and database are excluded from backup; keep originals.
-- Six iOS integration tests authored: actual WAV import/dedup/metadata, corrupt rejection, pre-cancellation, store reopen/missing file preservation, recursive folder/symlink behavior, malformed FLAC. One native UI navigation test and one appearance test.
+- Seven iOS integration tests authored: actual WAV import/dedup/metadata, corrupt rejection, pre-cancellation, store reopen/missing file preservation, recursive folder/symlink behavior, malformed FLAC and FLAC source-depth/Unicode comments. One native UI navigation test and one appearance test.
 
 ## Remaining verification and scope
 

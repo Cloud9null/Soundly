@@ -8,6 +8,7 @@ struct ImportProgress: Sendable {
     var processed = 0
     var imported = 0
     var duplicates = 0
+    var restored = 0
     var failures = 0
     var scanning = true
     var cancelled = false
@@ -65,7 +66,11 @@ actor MusicImporter {
             let staging = try LibraryPaths.directory("Staging").appendingPathComponent(UUID().uuidString).appendingPathExtension(source.pathExtension.lowercased())
             defer { try? FileManager.default.removeItem(at: staging) }
             let (hash,size) = try Self.coordinatedCopy(source, to: staging)
-            if try await writer.contains(hash) { state.duplicates += 1; return }
+            let existing = try await writer.existingFilename(hash)
+            if let existing,
+               FileManager.default.fileExists(atPath:try LibraryPaths.directory("Music").appendingPathComponent(existing).path) {
+                state.duplicates += 1; return
+            }
             let metadata = try await MetadataReader.read(staging)
             try Task.checkCancellation()
             let filename = hash + "." + source.pathExtension.lowercased()
@@ -80,7 +85,7 @@ actor MusicImporter {
             }
             do {
                 let inserted = try await writer.insert(ImportedSong(hash:hash,filename:filename,metadata:metadata,size:size,artwork:artwork,folder:folder))
-                if inserted { state.imported += 1 } else { state.duplicates += 1 }
+                if inserted { state.imported += 1 } else { state.restored += 1 }
             } catch {
                 if created { try? FileManager.default.removeItem(at: destination) }
                 throw error
@@ -126,7 +131,7 @@ final class ImportController {
         task = Task {
             let importer = await Task.detached { MusicImporter(writer:LibraryWriter(modelContainer:container)) }.value
             let final = await importer.run(urls) { [weak self] value in await self?.update(value) }
-            report = "\(final.imported) imported · \(final.duplicates) duplicates · \(final.failures) errors" + (final.cancelled ? " · Cancelled" : "")
+            report = "\(final.imported) imported · \(final.duplicates) duplicates · \(final.restored) restored · \(final.failures) errors" + (final.cancelled ? " · Cancelled" : "")
             running = false
         }
     }
