@@ -25,3 +25,7 @@ Open `Soundly.xcodeproj`, select the shared Soundly scheme and an iOS 26+ destin
 No accounts, application networking, analytics, advertising, external lookups or third-party runtime dependencies. A selected iCloud/File Provider source may need a download during import; completed private copies are offline. Imported copies/database are excluded from device backup: retain original music files.
 
 No project license has been selected. No source or assets copied from referenced products.
+
+## Verified Phase 3 checkpoint
+
+The iOS Release build and all 38 core/app/UI tests passed on application commit `122af9cb6928328124009cb225395712b683eeec`. An unsigned arm64 IPA was generated and inspected. See [verification report](Documentation/PHASE-3-VERIFICATION.md) for the artifact, hashes, test breakdown and unverified physical-device behavior. No gapless or physical bit-perfect claim is made.

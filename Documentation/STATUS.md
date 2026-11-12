@@ -34,3 +34,7 @@ Phase 3 implements the audio engine, queue, seek, interruption handling and syst
 ## Phase 3 implementation update
 
 Native AudioTransport actor, PlaybackController, queue/persistence, system controls, interruption/route/reset handling and observed diagnostics are now implemented. Theme count is twelve. See PHASE-3-AUDIO.md for exact behavior and limitations; prior statements that playback is pending describe the earlier Phase 2 checkpoint. No physical playback, installation, DAC or bit verification result has been established. Check current-head Actions for compilation and the authored playback tests; do not infer success from this ledger.
+
+## Phase 3 verified checkpoint
+
+Commit 122af9cb6928328124009cb225395712b683eeec passed the unsigned iOS Release build and all **38** core/app/UI tests. An unsigned arm64 device IPA was actually generated, downloaded and inspected. See PHASE-3-VERIFICATION.md for exact run, test breakdown, hashes and limits. The optional screenshot failed due to a shutdown base simulator; it is not included or claimed as reviewed.

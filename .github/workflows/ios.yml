@@ -43,6 +43,9 @@ jobs:
         continue-on-error: true
         run: |
           if [ -n "${SIMULATOR_ID:-}" ]; then
+            xcrun simctl boot "$SIMULATOR_ID" || true
+            xcrun simctl bootstatus "$SIMULATOR_ID" -b
+            xcrun simctl install "$SIMULATOR_ID" build/simulator/Build/Products/Debug-iphonesimulator/Soundly.app
             xcrun simctl launch --terminate-running-process "$SIMULATOR_ID" app.soundly.player
             sleep 2
             xcrun simctl io "$SIMULATOR_ID" screenshot build/Home.png
