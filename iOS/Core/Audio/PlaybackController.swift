@@ -20,6 +20,10 @@ final class PlaybackController {
     private var resumeAfterInterruption = false
     private var lastPersisted = Date.distantPast
     private var lastConfigured = Date.distantPast
+    private var pendingRouteChange: UInt?
+    private var systemSecond = -1
+    private var systemTrack: UUID?
+    private var systemPlaying = false
     private var context: ModelContext?
     var current: PlaybackTrack? { queue.current }
 
@@ -81,26 +85,27 @@ final class PlaybackController {
         guard let track = current else { return }
         audio = AudioObservation(); error = nil
         lastConfigured = Date()
-        if autoplay, recordPlay, let context {
+        submit({ [transport] in _ = try await transport.load(track,position:position,autoplay:autoplay) },onSuccess: { [weak self] in
+            guard autoplay, recordPlay, let context = self?.context else { return }
             let id = track.id
             var q = FetchDescriptor<Song>(predicate:#Predicate { $0.id == id }); q.fetchLimit = 1
             if let song = try? context.fetch(q).first {
-                // History denotes a playback request, not proof that a complete song was heard.
+                // A successful engine start, not proof that a complete song was heard.
                 song.lastPlayed = Date(); song.playCount += 1
                 do { try context.save() } catch { context.rollback() }
             }
-        }
-        submit { [transport] in _ = try await transport.load(track,position:position,autoplay:autoplay) }
+        })
         startPolling()
     }
-    private func submit(_ action:@escaping @Sendable () async throws -> Void) {
+    private func submit(_ action:@escaping @Sendable () async throws -> Void,onSuccess:(@MainActor ()->Void)? = nil) {
         let previous = operation
         revision += 1
         let token = revision
         busy = true
         operation = Task {
             await previous?.value
-            do { try await action() }
+            var succeeded = false
+            do { try await action(); succeeded = true }
             catch {
                 await transport.stop()
                 self.error = "Playback could not start or continue: \(error.localizedDescription)"
@@ -108,14 +113,16 @@ final class PlaybackController {
             guard token == revision else { return }
             audio = await transport.observation()
             busy = false
+            if succeeded { onSuccess?() }
             updateSystemMetadata(); persist()
+            if let pending = pendingRouteChange { pendingRouteChange = nil; routeChanged(pending) }
         }
     }
     private func startPolling() {
         guard poller == nil else { return }
         poller = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(for:.milliseconds(500))
+                try? await Task.sleep(for:.milliseconds(self?.audio.playing == true ? 500 : 2000))
                 guard let self else { return }
                 guard !busy else { continue }
                 let value = await transport.observation()
@@ -131,6 +138,9 @@ final class PlaybackController {
         let commands = MPRemoteCommandCenter.shared()
         [commands.playCommand,commands.pauseCommand,commands.togglePlayPauseCommand,commands.nextTrackCommand,commands.previousTrackCommand,commands.changePlaybackPositionCommand,commands.stopCommand].forEach { $0.isEnabled = current != nil }
         guard let current else { MPNowPlayingInfoCenter.default().nowPlayingInfo = nil; return }
+        let second = Int(max(0,audio.elapsed))
+        guard current.id != systemTrack || second != systemSecond || audio.playing != systemPlaying else { return }
+        systemTrack = current.id; systemSecond = second; systemPlaying = audio.playing
         MPNowPlayingInfoCenter.default().nowPlayingInfo = [
             MPMediaItemPropertyTitle:current.title, MPMediaItemPropertyArtist:current.artist,
             MPMediaItemPropertyAlbumTitle:current.album, MPMediaItemPropertyPlaybackDuration:audio.duration,
@@ -173,15 +183,15 @@ final class PlaybackController {
         observers.append(notifications.addObserver(forName:AVAudioSession.mediaServicesWereResetNotification,object:nil,queue:nil) { [weak self] _ in
             Task { @MainActor in
                 guard let self else { return }
-                let position = audio.elapsed
-                submit { [transport] in await transport.resetServices() }
-                load(position:position,autoplay:false,recordPlay:false)
+                let position = self.audio.elapsed
+                self.submit { [transport = self.transport] in await transport.resetServices() }
+                self.load(position:position,autoplay:false,recordPlay:false)
             }
         })
         observers.append(notifications.addObserver(forName:.AVAudioEngineConfigurationChange,object:nil,queue:nil) { [weak self] _ in
             Task { @MainActor in
-                guard let self, Date().timeIntervalSince(lastConfigured) > 2 else { return }
-                load(position:audio.elapsed,autoplay:audio.playing,recordPlay:false)
+                guard let self, Date().timeIntervalSince(self.lastConfigured) > 2 else { return }
+                self.load(position:self.audio.elapsed,autoplay:self.audio.playing,recordPlay:false)
             }
         })
         updateSystemMetadata()
@@ -197,7 +207,9 @@ final class PlaybackController {
         }
     }
     private func routeChanged(_ reason:UInt) {
-        guard current != nil, !busy else { return }
+        guard current != nil, reason != AVAudioSession.RouteChangeReason.categoryChange.rawValue,
+              reason != AVAudioSession.RouteChangeReason.unknown.rawValue else { return }
+        if busy { pendingRouteChange = reason; return }
         let disconnected = reason == AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue
         load(position:audio.elapsed,autoplay:audio.playing && !disconnected,recordPlay:false)
     }

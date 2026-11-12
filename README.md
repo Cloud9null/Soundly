@@ -7,12 +7,12 @@ Native iOS 26+ SwiftUI local music library and player under development. Officia
 ## Implemented
 
 - Reproducible checked-in Xcode project, Swift 6, original icon and privacy manifest.
-- Native Home, Library, Now Playing and Settings; six persistent appearance choices and Liquid Glass.
+- Native Home, Library, Now Playing and Settings; twelve persistent appearance choices and Liquid Glass.
 - Offline private-copy Files/folder import, streaming SHA-256 deduplication, cancellation and progress.
 - Local SwiftData database without CloudKit; metadata/artwork, search, favorites, albums/artists/folders and local rescan.
 - Separate pure domain package and conservative Signal Path evaluator.
 
-**Playback is pending Phase 3.** Selecting a song displays real imported metadata and cover, not simulated playback. No DSP, bit-perfect, output sample-rate or hardware claim is fabricated. Source format labels describe the file only.
+Phase 3 adds native file/PCM playback, seek, queue, repeat/shuffle, remote controls, local playback-session restoration and observed audio diagnostics. Physical playback/installation and bit identity remain unverified until tested; source badges describe files, not the DAC. See [audio implementation and test boundaries](Documentation/PHASE-3-AUDIO.md). Gapless transitions are not yet implemented.
 
 See [verification ledger](Documentation/STATUS.md), [architecture](Documentation/ARCHITECTURE.md), [audio validation](Documentation/AUDIO-VERIFICATION.md) and [build instructions](Documentation/BUILDING.md). Always inspect the iOS workflow, not only the core-package check.
 

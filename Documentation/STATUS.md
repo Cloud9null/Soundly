@@ -29,3 +29,8 @@ The execution host is Linux without Swift/Xcode; actual iOS builds/tests run in 
 No physical iPhone installation, DAC, audible playback, background playback, bit-perfect capture, format/rate matrix, or 100/1,000/10,000-track performance measurements have been performed. Linked external folders/bookmarks, comprehensive metadata edge cases, playlists/LRC, full listening-history Home sections and a dedicated duplicate manager remain later work. The importer shows aggregate counters and up to 20 per-file error details in the UI; it does not log filenames to CI.
 
 Phase 3 implements the audio engine, queue, seek, interruption handling and system controls. Phase 4 binds actual observations to Signal Path UI. Phase 5 expands fixture/UI/accessibility/performance tests. Phase 6 verifies signing/installation and release readiness. An unsigned IPA from CI is an early app for signing/testing, not a completed music player or a verified installation.
+
+
+## Phase 3 implementation update
+
+Native AudioTransport actor, PlaybackController, queue/persistence, system controls, interruption/route/reset handling and observed diagnostics are now implemented. Theme count is twelve. See PHASE-3-AUDIO.md for exact behavior and limitations; prior statements that playback is pending describe the earlier Phase 2 checkpoint. No physical playback, installation, DAC or bit verification result has been established. Check current-head Actions for compilation and the authored playback tests; do not infer success from this ledger.
