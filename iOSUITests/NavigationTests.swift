@@ -14,5 +14,8 @@ final class NavigationTests: XCTestCase {
         app.buttons["miniPlayerOpen"].tap()
         XCTAssertTrue(app.staticTexts["Nothing playing"].waitForExistence(timeout: 3))
         app.buttons["Done"].tap()
+        app.buttons["settingsSignalPath"].tap()
+        XCTAssertTrue(app.navigationBars["Signal Path"].waitForExistence(timeout:5))
+        XCTAssertTrue(app.descendants(matching:.any)["signalPathStatus"].exists)
     }
 }

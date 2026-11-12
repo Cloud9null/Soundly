@@ -68,7 +68,7 @@ struct HomeView: View {
                 } else {
                     section("Recently added",Array(songs.prefix(12)))
                     section("Favorite songs",Array(songs.filter(\.favorite).prefix(12)))
-                    Button("Discover a random album",systemImage:"shuffle") {
+                    Button("Play a random song",systemImage:"shuffle") {
                         if let song = songs.randomElement() { select(song) }
                     }.buttonStyle(.glass)
                 }
@@ -268,7 +268,7 @@ struct SettingsView: View {
                 ImportStatusView()
             }
             Section("Audio") {
-                NavigationLink("Output and signal diagnostics") { AudioDiagnosticsView() }
+                NavigationLink("Signal Path",destination:SignalPathView()).accessibilityIdentifier("settingsSignalPath")
                 Text("Native-rate request · Unity application gain · No EQ, ReplayGain or crossfade").font(.footnote)
                 Text("Gapless transitions are not yet implemented. Output is Not Bit-Verified.").font(.footnote)
             }
@@ -277,7 +277,7 @@ struct SettingsView: View {
                 Text("Music stays on this device. No external artwork or metadata lookups. Imported music is excluded from device backups; keep your original files.").font(.footnote)
             }
             Section("About") {
-                LabeledContent("Version",value:"0.3.0 (3)")
+                LabeledContent("Version",value:"0.4.0 (4)")
                 Text("Built with Apple frameworks. No third-party runtime code.")
             }
         }.soundlySurface().navigationTitle("Settings")

@@ -25,6 +25,7 @@ struct AudioObservation: Sendable {
     var route = "Not observed"
     var routeTypes: [String] = []
     var rateRequestNote: String?
+    var signalPath = LiveSignalPath()
 }
 
 /// Serialized control plane. AVFoundation schedules/decodes the file on its own workers.
@@ -32,6 +33,7 @@ struct AudioObservation: Sendable {
 actor AudioTransport {
     private var engine = AVAudioEngine()
     private var player = AVAudioPlayerNode()
+    private var sourceInfo = SourceAudioInfo()
     private var file: AVAudioFile?
     private var offset: AVAudioFramePosition = 0
     private var generation: UInt64 = 0
@@ -51,12 +53,13 @@ actor AudioTransport {
 
     private func open(_ url: URL, position: Double, autoplay: Bool) throws -> AudioObservation {
         generation &+= 1; playing = false; ended = false
-        player.stop(); engine.stop(); file = nil
+        player.stop(); engine.stop(); file = nil; sourceInfo = SourceAudioInfo()
         let source = try AVAudioFile(forReading:url)
         guard source.length > 0, source.processingFormat.channelCount > 0,
               source.processingFormat.sampleRate > 0 else { throw CocoaError(.fileReadCorruptFile) }
         if active { try AVAudioSession.sharedInstance().setActive(false); active = false }
         configured = false; rateRequestNote = nil
+        sourceInfo = try SourceFormatInspector.inspect(source,url:url)
         file = source
         offset = Self.frame(position,rate:source.processingFormat.sampleRate,length:source.length)
         if autoplay { try resume() }
@@ -119,6 +122,7 @@ actor AudioTransport {
         player.stop(); engine.pause(); playing = false
         if let file { offset = Self.frame(position,rate:file.processingFormat.sampleRate,length:file.length) }
     }
+    func interrupted() { pause(); active = false }
     func seek(_ seconds:Double) throws {
         guard let file else { return }
         let shouldPlay = playing
@@ -132,11 +136,14 @@ actor AudioTransport {
         active = false
     }
     func resetServices() {
-        stop(); engine = AVAudioEngine(); player = AVAudioPlayerNode(); file = nil; attached = false; configured = false
+        stop(); engine = AVAudioEngine(); player = AVAudioPlayerNode(); file = nil; sourceInfo = SourceAudioInfo(); attached = false; configured = false
     }
     func observation() -> AudioObservation {
         var value = AudioObservation()
         value.rateRequestNote = rateRequestNote
+        value.signalPath.source = sourceInfo
+        value.signalPath.snapshot.source = sourceInfo.pcm
+        value.signalPath.snapshot.sourceIsLossless = sourceInfo.lossless
         value.playing = playing; value.ended = ended
         if let file {
             let format = file.processingFormat
@@ -144,15 +151,28 @@ actor AudioTransport {
             var frames = offset
             if playing, let time = player.lastRenderTime, let clock = player.playerTime(forNodeTime:time) { frames += max(0,clock.sampleTime) }
             value.elapsed = min(value.duration,Double(frames)/format.sampleRate)
+            value.signalPath.snapshot.decoderOutput = SourceFormatInspector.pcm(format)
             value.decoderRate = format.sampleRate; value.decoderChannels = Int(format.channelCount)
             value.decoderRepresentation = "\(format.commonFormat == .pcmFormatFloat32 ? "Float32" : String(describing:format.commonFormat)) PCM"
-            if configured { value.mixerRate = engine.mainMixerNode.outputFormat(forBus:0).sampleRate }
+            if configured {
+                let mixerFormat = engine.mainMixerNode.outputFormat(forBus:0)
+                value.mixerRate = mixerFormat.sampleRate
+                value.signalPath.snapshot.engineOutput = SourceFormatInspector.pcm(mixerFormat)
+                value.signalPath.snapshot.engineGain = Double(player.volume * engine.mainMixerNode.outputVolume)
+                value.signalPath.snapshot.processing = .bypassed // No optional DSP; Apple's mixer is still disclosed.
+            }
         }
         if active {
             let session = AVAudioSession.sharedInstance()
+            value.signalPath.snapshot.sessionIsActive = true
+            value.signalPath.systemVolume = session.outputVolume
+            value.signalPath.bufferDuration = session.ioBufferDuration
             value.sessionRate = session.sampleRate; value.sessionChannels = session.outputNumberOfChannels
             value.route = session.currentRoute.outputs.map(\.portName).joined(separator:", ")
             value.routeTypes = session.currentRoute.outputs.map { $0.portType.rawValue }
+            value.signalPath.snapshot.sessionSampleRate = value.sessionRate
+            value.signalPath.snapshot.sessionChannels = value.sessionChannels
+            value.signalPath.snapshot.route = LiveSignalPath.route(value.routeTypes)
         }
         return value
     }

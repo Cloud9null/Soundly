@@ -98,6 +98,8 @@ final class RealtimeTransportTests: XCTestCase {
         do {
             let loaded = try await transport.load(track,autoplay:false)
             XCTAssertFalse(loaded.playing); XCTAssertEqual(loaded.sessionRate,0)
+            XCTAssertEqual(loaded.signalPath.assessment.status,.unknown)
+            XCTAssertEqual(loaded.signalPath.snapshot.source?.bitDepth,16)
             try await transport.resume()
              XCTAssertEqual(loaded.duration,2,accuracy:0.001)
             var running = await transport.observation()
@@ -106,7 +108,12 @@ final class RealtimeTransportTests: XCTestCase {
                 running = await transport.observation()
             }
             XCTAssertGreaterThan(running.elapsed,0,"Output timeline did not advance")
-            await transport.pause()
+            XCTAssertTrue(running.signalPath.snapshot.sessionIsActive)
+            XCTAssertNotEqual(running.signalPath.assessment.status,.verifiedBitPerfect)
+            await transport.interrupted()
+            let interrupted = await transport.observation()
+            XCTAssertFalse(interrupted.signalPath.snapshot.sessionIsActive)
+            XCTAssertEqual(interrupted.signalPath.assessment.status,.unknown)
             let paused = await transport.observation(); XCTAssertFalse(paused.playing)
             try await Task.sleep(for:.milliseconds(50))
             let still = await transport.observation(); XCTAssertEqual(paused.elapsed,still.elapsed,accuracy:0.001)
@@ -116,6 +123,7 @@ final class RealtimeTransportTests: XCTestCase {
             let resumed = await transport.observation(); XCTAssertTrue(resumed.playing)
             await transport.stop()
             let stopped = await transport.observation(); XCTAssertFalse(stopped.playing); XCTAssertEqual(stopped.elapsed,0)
+            XCTAssertEqual(stopped.signalPath.assessment.status,.unknown)
         } catch { await transport.stop(); throw error }
     }
 }

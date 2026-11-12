@@ -48,11 +48,11 @@ struct NowPlayingView: View {
                             Spacer()
                             SystemRoutePicker().frame(width:44,height:44).accessibilityLabel("Choose audio output")
                         }
-                        NavigationLink("Audio quality and output") { AudioDiagnosticsView() }
+                        NavigationLink("Signal Path",destination:SignalPathView()).accessibilityIdentifier("openSignalPath")
                     } else {
                         Text("Choose a song from your library to begin.").foregroundStyle(.secondary)
                     }
-                    Label("Not Bit-Verified",systemImage:"info.circle").font(.footnote).padding().glassEffect()
+                    Label(playback.audio.signalPath.assessment.status.rawValue,systemImage:"info.circle").font(.footnote).padding().glassEffect()
                 }.padding(24)
             }
             .background {
@@ -101,38 +101,6 @@ struct QueueView: View {
             }.buttonStyle(.plain)
         }.soundlySurface().navigationTitle("Queue")
     }
-}
-
-struct AudioDiagnosticsView: View {
-    @Environment(PlaybackController.self) private var playback
-    var body: some View {
-        Form {
-            Section("Source file") { Text(playback.current?.sourceQuality ?? "No track selected") }
-            Section("Decoder — observed PCM") {
-                LabeledContent("Representation",value:playback.audio.decoderRepresentation)
-                LabeledContent("Sample rate",value:rate(playback.audio.decoderRate))
-                LabeledContent("Channels",value:playback.audio.decoderChannels > 0 ? "\(playback.audio.decoderChannels)" : "Unknown")
-            }
-            Section("Engine") {
-                Text("AVAudioPlayerNode → Apple main mixer → output node")
-                LabeledContent("Mixer output rate",value:rate(playback.audio.mixerRate))
-                Text("Application gain: 1.0. No EQ, normalization or crossfade. Decoder float conversion and system mixing may occur.")
-            }
-            Section("Audio session — API reported") {
-                LabeledContent("Effective session rate",value:rate(playback.audio.sessionRate))
-                LabeledContent("Output channels",value:playback.audio.sessionChannels > 0 ? "\(playback.audio.sessionChannels)" : "Unknown")
-                if let note = playback.audio.rateRequestNote { Text(note).font(.footnote) }
-                Text(playback.audio.route)
-                Text(playback.audio.routeTypes.joined(separator:", ")).font(.caption)
-            }
-            Section("Verification") {
-                Text("Not Bit-Verified").font(.headline)
-                if playback.audio.routeTypes.contains(AVAudioSession.Port.bluetoothA2DP.rawValue) || playback.audio.routeTypes.contains(AVAudioSession.Port.bluetoothHFP.rawValue) { Text("Lossy Bluetooth transport. PCM bit-perfect output is not claimed.") }
-                Text("Matching rates do not establish sample identity. iOS does not expose every downstream processing stage, the effective DAC bit depth or its chip model. External digital capture is required.")
-            }
-        }.soundlySurface().navigationTitle("Audio diagnostics")
-    }
-    private func rate(_ value:Double)->String { value > 0 ? String(format:"%.1f kHz",value/1000) : "Not observed" }
 }
 
 struct SystemRoutePicker: UIViewRepresentable {

@@ -27,11 +27,12 @@ final class PlaybackController {
     private var context: ModelContext?
     var current: PlaybackTrack? { queue.current }
 
-    init() { registerSystemEvents() }
+    init() {}
 
     func attach(_ context:ModelContext) {
         guard self.context == nil else { return }
         self.context = context
+        registerSystemEvents()
         Task {
             if let saved = await Self.readSession(), queue.current == nil {
                 queue = saved.queue
@@ -200,7 +201,8 @@ final class PlaybackController {
     private func interrupted(type:UInt,options:UInt) {
         if type == AVAudioSession.InterruptionType.began.rawValue {
             let wasPlaying = audio.playing
-            pause(); resumeAfterInterruption = wasPlaying
+            submit { [transport] in await transport.interrupted() }
+            resumeAfterInterruption = wasPlaying
         } else {
             let allowed = options & AVAudioSession.InterruptionOptions.shouldResume.rawValue != 0
             if resumeAfterInterruption, allowed { resumeAfterInterruption = false; resume() }
