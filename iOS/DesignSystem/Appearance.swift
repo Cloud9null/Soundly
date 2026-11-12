@@ -13,7 +13,7 @@ enum SoundlyTheme: String, CaseIterable, Identifiable {
 }
 
 @MainActor
-private enum ArtworkCache {
+enum ArtworkCache {
     static let images: NSCache<NSString, UIImage> = {
         let cache = NSCache<NSString, UIImage>()
         cache.countLimit = 48; cache.totalCostLimit = 32 * 1024 * 1024

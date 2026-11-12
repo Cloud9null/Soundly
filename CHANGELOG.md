@@ -9,3 +9,11 @@
 - Documented audio/Files restrictions, licensing boundaries, build and evidence requirements.
 
 An iOS app target, importer, player and IPA are pending later phases.
+
+## Unreleased — Phases 1–2
+
+- Added reproducible native Xcode app, themes, Home/Library/Now Playing/Settings and icon.
+- Added private-copy coordinated import, local SwiftData store, real metadata/artwork and deduplication.
+- Added search/favorites/group browsing, local availability/metadata rescan and storage information.
+- Added iOS simulator integration/UI tests, unsigned device build and conditional IPA packaging.
+- Playback remains pending Phase 3; no physical device or bit-perfect verification is claimed.

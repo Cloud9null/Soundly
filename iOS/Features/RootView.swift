@@ -92,8 +92,8 @@ struct LibraryView: View {
     var body: some View {
         VStack(spacing:0) {
             Picker("Browse by",selection:$mode) {
-                ForEach(["Songs","Albums","Artists","Folders"],id:\.self) { Text($0) }
-            }.pickerStyle(.segmented).padding(.horizontal)
+                ForEach(["Songs","Albums","Artists","Album Artists","Genres","Composers","Folders"],id:\.self) { Text($0) }
+            }.pickerStyle(.menu).padding(.horizontal)
             SongResults(search:search,mode:mode,favorites:favorites,newest:newest,select:select)
             ImportStatusView().padding(.horizontal)
         }.navigationTitle("Library").searchable(text:$search,prompt:"Songs, artists or albums")
@@ -130,7 +130,11 @@ struct SongResults: View {
             } else {
                 let groups = Dictionary(grouping:songs) { song in
                     switch mode { case "Albums": song.album + " — " + song.albumArtist
-                    case "Artists": song.artist; default: song.originalFolder }
+                    case "Artists": song.artist
+                    case "Album Artists": song.albumArtist
+                    case "Genres": song.genre.isEmpty ? "Unknown Genre" : song.genre
+                    case "Composers": song.composer.isEmpty ? "Unknown Composer" : song.composer
+                    default: song.originalFolder }
                 }
                 ForEach(groups.keys.sorted(),id:\.self) { group in
                     DisclosureGroup(group) { ForEach(groups[group] ?? []) { row($0) } }
@@ -184,11 +188,21 @@ struct ImportStatusView: View {
                 Text("\(importer.state.processed) processed · \(importer.state.imported) imported").font(.caption)
                 Button("Cancel") { importer.cancel() }
             }.padding(.vertical,8).accessibilityElement(children:.contain)
-        } else if let report = importer.report { Text(report).font(.caption).foregroundStyle(.secondary) }
+        } else if let report = importer.report {
+            VStack(alignment:.leading) {
+                Text(report).font(.caption).foregroundStyle(.secondary)
+                if !importer.state.issues.isEmpty {
+                    DisclosureGroup("Import errors (up to 20)") {
+                        ForEach(Array(importer.state.issues.enumerated()),id:\.offset) { _, issue in Text(issue).font(.caption) }
+                    }
+                }
+            }
+        }
     }
 }
 
 struct NowPlayingView: View {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.dismiss) private var dismiss
     let song:Song?
     var body: some View {
@@ -206,6 +220,10 @@ struct NowPlayingView: View {
                     Text("Playback engine pending Phase 3. No audio output has been measured.").foregroundStyle(.secondary).multilineTextAlignment(.center)
                     Label("Not Bit-Verified",systemImage:"info.circle").padding().glassEffect()
                 }.padding(24)
+            }.background {
+                if let artwork = song?.artwork, !reduceTransparency {
+                    CoverView(artwork:artwork,size:500).blur(radius:80).opacity(0.25).allowsHitTesting(false)
+                }
             }.navigationTitle("Now Playing").navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement:.confirmationAction) { Button("Done") { dismiss() } } }
         }
@@ -232,7 +250,7 @@ struct SettingsView: View {
                         .navigationTitle("Imported folders")
                         .safeAreaInset(edge:.bottom) { Text("These are private copies. External folders are not linked or monitored.").font(.footnote).padding().background(.regularMaterial) }
                 }
-                Button("Rescan local file availability") {
+                Button("Rescan local library") {
                     busy = true
                     let container = context.container
                     Task {
@@ -241,6 +259,19 @@ struct SettingsView: View {
                             let missing = try await writer.rescan()
                             message = "\(missing) missing files. Records preserved."
                         } catch { message = "Rescan failed. Records preserved." }
+                        busy = false
+                    }
+                }.disabled(busy)
+                Button("Clear artwork cache") {
+                    busy = true
+                    let container = context.container
+                    Task {
+                        do {
+                            let writer = await Task.detached { LibraryWriter(modelContainer:container) }.value
+                            try await writer.clearArtwork()
+                            ArtworkCache.images.removeAllObjects()
+                            message = "Artwork cleared. Rescan to regenerate from your music files."
+                        } catch { message = "Could not clear artwork cache." }
                         busy = false
                     }
                 }.disabled(busy)

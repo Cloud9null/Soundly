@@ -80,10 +80,34 @@ actor LibraryWriter {
         do { try modelContext.save(); return true }
         catch { modelContext.rollback(); throw error }
     }
-    func rescan() throws -> Int {
+    func clearArtwork() throws {
+        let directory = try LibraryPaths.directory("Artwork")
+        for file in try FileManager.default.contentsOfDirectory(at:directory,includingPropertiesForKeys:nil) {
+            try FileManager.default.removeItem(at:file)
+        }
+        for song in try modelContext.fetch(FetchDescriptor<Song>()) { song.artwork = nil }
+        try modelContext.save()
+    }
+    func rescan() async throws -> Int {
         let music = try LibraryPaths.directory("Music")
         let songs = try modelContext.fetch(FetchDescriptor<Song>())
-        for song in songs { song.available = FileManager.default.fileExists(atPath: music.appendingPathComponent(song.filename).path) }
+        for song in songs {
+            try Task.checkCancellation()
+            let url = music.appendingPathComponent(song.filename)
+            song.available = FileManager.default.fileExists(atPath:url.path)
+            if song.available, let m = try? await MetadataReader.read(url) {
+                song.title = m.title; song.artist = m.artist; song.album = m.album
+                song.albumArtist = m.albumArtist; song.genre = m.genre; song.composer = m.composer
+                song.trackNumber = m.track; song.discNumber = m.disc
+                song.duration = m.duration; song.sampleRate = m.rate
+                song.bitDepth = m.bits; song.channels = m.channels; song.codec = m.codec
+                if let data = m.artwork {
+                    let key = song.hash + ".jpg"
+                    if let target = try? LibraryPaths.directory("Artwork").appendingPathComponent(key),
+                       (try? MetadataReader.saveArtwork(data,to:target)) != nil { song.artwork = key }
+                }
+            }
+        }
         try modelContext.save()
         return songs.filter { !$0.available }.count
     }

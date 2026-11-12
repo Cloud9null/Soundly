@@ -11,6 +11,7 @@ struct ImportProgress: Sendable {
     var failures = 0
     var scanning = true
     var cancelled = false
+    var issues: [String] = []
 }
 
 actor MusicImporter {
@@ -32,7 +33,7 @@ actor MusicImporter {
                     // Enumeration stays on this worker actor; files are processed incrementally.
                     var enumerationFailed = false
                     guard let enumerator = fm.enumerator(at: root, includingPropertiesForKeys: [.isRegularFileKey,.isSymbolicLinkKey], options:[.skipsHiddenFiles,.skipsPackageDescendants], errorHandler: { _, _ in enumerationFailed = true; return true }) else { throw CocoaError(.fileReadNoPermission) }
-                    for case let file as URL in enumerator {
+                    while let file = enumerator.nextObject() as? URL {
                         try Task.checkCancellation()
                         let v = try file.resourceValues(forKeys:[.isRegularFileKey,.isSymbolicLinkKey])
                         guard v.isRegularFile == true, v.isSymbolicLink != true,
@@ -48,7 +49,7 @@ actor MusicImporter {
                     await importOne(root, folder: "Selected files", state: &state)
                 } else { state.failures += 1 }
             } catch is CancellationError { state.cancelled = true; break }
-            catch { state.failures += 1 }
+            catch { state.failures += 1; if state.issues.count < 20 { state.issues.append(root.lastPathComponent + ": " + error.localizedDescription) } }
             await progress(state)
         }
         state.scanning = false
@@ -85,7 +86,7 @@ actor MusicImporter {
                 throw error
             }
         } catch is CancellationError { state.cancelled = true }
-        catch { state.failures += 1 }
+        catch { state.failures += 1; if state.issues.count < 20 { state.issues.append(source.lastPathComponent + ": " + error.localizedDescription) } }
     }
 
     static func coordinatedCopy(_ source: URL, to destination: URL) throws -> (String,Int64) {

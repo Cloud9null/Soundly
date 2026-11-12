@@ -2,25 +2,26 @@
 
 **Your music. Your files. Your sound.**
 
-Private, offline, native iOS music player under active development.
+Native iOS 26+ SwiftUI local music library and player under development. Official repository: Cloud9null/Soundly. Work is on `feat/ios-mvp` in draft PR #1; main is not overwritten or merged automatically.
 
-## Current milestone — Phase 0
+## Implemented
 
-Repository audited and initialized. The first executable code is a dependency-free Swift 6 domain package containing validated PCM metadata, library track values, and a conservative Signal Path evaluator. Nineteen XCTest methods cover misleading verification states, route classification, conversions, unavailable measurements, unsafe paths, and incomplete Unicode metadata.
+- Reproducible checked-in Xcode project, Swift 6, original icon and privacy manifest.
+- Native Home, Library, Now Playing and Settings; six persistent appearance choices and Liquid Glass.
+- Offline private-copy Files/folder import, streaming SHA-256 deduplication, cancellation and progress.
+- Local SwiftData database without CloudKit; metadata/artwork, search, favorites, albums/artists/folders and local rescan.
+- Separate pure domain package and conservative Signal Path evaluator.
 
-This is not yet an iOS application. There is no Xcode app target, UI, importer, player, or IPA in this phase. Package compilation and tests must be confirmed by the linked Actions run; source existence does not imply successful execution. See [status](Documentation/STATUS.md).
+**Playback is pending Phase 3.** Selecting a song displays real imported metadata and cover, not simulated playback. No DSP, bit-perfect, output sample-rate or hardware claim is fabricated. Source format labels describe the file only.
 
-## Selected implementation
+See [verification ledger](Documentation/STATUS.md), [architecture](Documentation/ARCHITECTURE.md), [audio validation](Documentation/AUDIO-VERIFICATION.md) and [build instructions](Documentation/BUILDING.md). Always inspect the iOS workflow, not only the core-package check.
 
-- Deployment target: **iOS 26.0**, native SwiftUI and Liquid Glass.
-- Initial CI: **macos-15 / Xcode 26.3**, Swift 6 mode. The workflow records the actual compiler and SDK versions and fails if that Xcode is unavailable.
-- Local domain package: `swift test` on a host with Swift 6 or newer.
-- Planned app: SwiftUI + SwiftData (local configuration, no CloudKit entitlement).
-- Planned audio adapter: AVAudioFile → bounded PCM buffers → AVAudioPlayerNode / AVAudioEngine → AVAudioSession playback. Every observed conversion is disclosed. RemoteIO is a later measured alternative, not an exclusive-DAC promise.
-- Zero application networking, accounts, analytics, advertising, cloud sync, or third-party runtime dependencies.
+## Build
 
-Read [architecture](Documentation/ARCHITECTURE.md), [audit](Documentation/PHASE-0-AUDIT.md), [audio verification](Documentation/AUDIO-VERIFICATION.md), and [build/distribution plan](Documentation/BUILDING.md).
+Open `Soundly.xcodeproj`, select the shared Soundly scheme and an iOS 26+ destination, and build using Xcode 26.3. No third-party package installation is needed. Set your own team for device signing. Bundle ID defaults to `app.soundly.player` and can be overridden in Xcode or xcodebuild. No signing secrets are stored.
 
-## Repository policy
+`python3 Scripts/generate_project.py` regenerates the project deterministically after adding Swift source files. `swift test` runs the separate core package. The macOS iOS workflow builds unsigned arm64 Release, runs simulator app/integration/UI tests, then packages an unsigned IPA only if prior steps pass.
 
-Work proceeds on `feat/ios-mvp`; `main` received only the minimal initialization needed to create a development branch in an empty repository. Do not merge an unfinished milestone as a release. No license has been selected; no third-party code or visual assets are incorporated.
+No accounts, application networking, analytics, advertising, external lookups or third-party runtime dependencies. A selected iCloud/File Provider source may need a download during import; completed private copies are offline. Imported copies/database are excluded from device backup: retain original music files.
+
+No project license has been selected. No source or assets copied from referenced products.

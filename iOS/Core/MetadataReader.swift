@@ -44,12 +44,18 @@ enum MetadataReader {
         for item in items {
             try Task.checkCancellation()
             let key = item.commonKey?.rawValue ?? ""
+            let identifier = item.identifier?.rawValue ?? ""
+            if identifier.contains("trkn") || identifier.contains("disk") {
+                if let data = try? await item.load(.dataValue), data.count >= 4 {
+                    let b = Array(data); let n = Int(b[2]) << 8 | Int(b[3])
+                    if identifier.contains("trkn") { m.track = n } else { m.disc = n }
+                }
+            }
             if key == "artwork" {
                 if let data = try? await item.load(.dataValue), data.count <= 8 * 1024 * 1024 { m.artwork = data }
                 continue
             }
             guard let value = try? await item.load(.stringValue), !value.isEmpty else { continue }
-            let identifier = item.identifier?.rawValue ?? ""
             switch key {
             case "title": m.title = value
             case "artist": m.artist = value
@@ -57,8 +63,9 @@ enum MetadataReader {
             case "type": m.genre = value
             case "creator": m.composer = value
             default:
-                if identifier.contains("TPE2") || identifier.contains("albumArtist") { m.albumArtist = value }
-                if identifier.contains("TCOM") || identifier.contains("composer") { m.composer = value }
+                if identifier.contains("TPE2") || identifier.contains("albumArtist") || identifier.contains("aART") { m.albumArtist = value }
+                if identifier.contains("TCOM") || identifier.contains("composer") || identifier.contains("©wrt") { m.composer = value }
+                if identifier.contains("TCON") || identifier.contains("©gen") { m.genre = value }
                 if identifier.contains("TRCK") { m.track = Int(value.split(separator: "/").first ?? "") ?? 0 }
                 if identifier.contains("TPOS") { m.disc = Int(value.split(separator: "/").first ?? "") ?? 0 }
             }
