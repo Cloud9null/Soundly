@@ -14,6 +14,8 @@ swift test
 
 The checked-in Actions workflow runs these steps with read-only repository permissions and uploads test logs. It does not build an iOS app yet. On the current Linux execution host, no Swift compiler is installed; no local Swift test result is claimed.
 
+GitHub's account artifact storage quota was reported exhausted during the initial run. Console logs remain the authoritative evidence; a separate log ZIP is best-effort and does not hide failed tests. A future IPA upload requires available artifact storage or another authorized delivery path. No account artifacts are deleted automatically.
+
 ## Phase 1 target
 
 Check in a reproducible `Soundly.xcodeproj`, shared scheme, native SwiftUI app target, configurable `PRODUCT_BUNDLE_IDENTIFIER` (initially `app.soundly.player`), iOS 26.0 minimum, Swift 6, privacy manifest, asset catalog and app icon, Info.plist with background audio mode, and no microphone/photo-library permission. No signing team, certificate, profile or Apple ID is committed. CI must first build for simulator and generic iOS device with signing disabled, and run the app's actual tests when targets exist.

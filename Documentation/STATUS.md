@@ -11,6 +11,8 @@
 
 Execution host: Linux; no swift or xcodebuild. Local static checks can validate file structure/YAML and Git diff; they do not compile Swift. Consult the PR's Actions checks for authoritative compiler/test outcome.
 
+Initial CI observed Xcode 26.3 (17C529), iOS 26.2 SDK and Swift 6.2.4 on macOS. The first run compiled the package but was superseded by a newer commit. GitHub reported exhausted account artifact storage quota on log upload. Log upload is therefore best-effort; test failures still fail CI, and the console preserves build/test evidence. This quota would also block a later IPA artifact upload until storage becomes available; no existing artifacts were deleted.
+
 ## Later phases — not implemented in Phase 0
 
 1. Xcode project, SwiftUI Home/Library/Now Playing, mini-player, themes, icon, native Liquid Glass, accessibility and iOS build CI.

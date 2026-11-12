@@ -35,12 +35,18 @@ jobs:
       - name: Build and test domain code in Swift 6
         run: |
           set -euo pipefail
-          swift test --parallel 2>&1 | tee core-tests.log
+          swift test 2>&1 | tee core-tests.log
       - name: Preserve compiler and test log
-        if: always()
+        if: always() && !cancelled()
+        continue-on-error: true # Console logs remain available if account artifact quota is exhausted.
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: soundly-core-test-log
           path: core-tests.log
           if-no-files-found: warn
           retention-days: 7
+      - name: Record evidence location
+        if: always() && !cancelled()
+        run: |
+          echo '## Soundly Core verification' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Compiler versions and complete build/test output are in the job console. A failed test fails the job; separate log artifact upload is best-effort and may be blocked by account storage quota.' >> "$GITHUB_STEP_SUMMARY"
