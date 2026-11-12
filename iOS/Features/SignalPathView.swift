@@ -50,6 +50,17 @@ struct SignalPathView: View {
                     Text("Integer/float or sample-width conversion is reported conservatively; it does not necessarily imply lost information. Rate equality does not prove sample identity. External digital capture is required for a specifically tested route.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
+                if !playback.routeEvents.isEmpty {
+                    DisclosureGroup("Recent route / interruption events") {
+                        ForEach(playback.routeEvents.reversed()) { event in
+                            VStack(alignment:.leading,spacing:4) {
+                                Text(event.date,style:.time).font(.caption.monospacedDigit())
+                                Text(event.message).font(.footnote)
+                            }.padding(.vertical,4)
+                        }
+                        Text("Memory-only, up to 30 events. No track titles, file paths or personal port names are logged.").font(.caption).foregroundStyle(.secondary)
+                    }
+                }
                 Text("Evidence labels distinguish parsed source metadata, iOS/API observations, inferred conversion and unavailable physical measurements. No value is a fabricated DAC capability.")
                     .font(.footnote).foregroundStyle(.secondary)
             }.padding()

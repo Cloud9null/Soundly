@@ -10,6 +10,7 @@ final class PlaybackController {
     private(set) var audio = AudioObservation()
     private(set) var busy = false
     var error: String?
+    private(set) var routeEvents:[AudioRouteEvent] = []
     private let transport = AudioTransport()
     private var operation: Task<Void,Never>?
     private var saveTask: Task<Void,Never>?
@@ -200,10 +201,12 @@ final class PlaybackController {
     }
     private func interrupted(type:UInt,options:UInt) {
         if type == AVAudioSession.InterruptionType.began.rawValue {
+            recordRouteEvent("Audio interruption began; session observations invalidated.")
             let wasPlaying = audio.playing
             submit { [transport] in await transport.interrupted() }
             resumeAfterInterruption = wasPlaying
         } else {
+            recordRouteEvent("Audio interruption ended; evaluating system resume permission.")
             let allowed = options & AVAudioSession.InterruptionOptions.shouldResume.rawValue != 0
             if resumeAfterInterruption, allowed { resumeAfterInterruption = false; resume() }
             else { resumeAfterInterruption = false }
@@ -213,8 +216,14 @@ final class PlaybackController {
         guard current != nil, reason != AVAudioSession.RouteChangeReason.categoryChange.rawValue,
               reason != AVAudioSession.RouteChangeReason.unknown.rawValue else { return }
         if busy { pendingRouteChange = reason; return }
+        recordRouteEvent("Output route changed (iOS reason \(reason)); refreshing the observed chain.")
         let disconnected = reason == AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue
         load(position:audio.elapsed,autoplay:audio.playing && !disconnected,recordPlay:false)
+    }
+
+    private func recordRouteEvent(_ message:String) {
+        routeEvents.append(AudioRouteEvent(message:message))
+        if routeEvents.count > 30 { routeEvents.removeFirst(routeEvents.count-30) }
     }
 
     private static func readSession() async -> SavedPlaybackSession? {
@@ -242,4 +251,10 @@ final class PlaybackController {
 struct SavedPlaybackSession: Codable, Sendable {
     var queue:PlaybackQueue
     var position:Double
+}
+
+struct AudioRouteEvent: Identifiable, Sendable {
+    let id = UUID()
+    let date = Date()
+    let message:String
 }

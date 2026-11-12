@@ -28,3 +28,11 @@ An iOS app target, importer, player and IPA are pending later phases.
 - Gapless transitions, physical output verification and lock-screen artwork remain pending.
 - Fixed a reserved `hash` storage-property collision discovered by actual library tests; renamed the persisted attribute to fileHash with migration mapping.
 - Made the native glass mini-player independently visible/accessibile in every tab and retained its navigation UI assertion.
+
+## Unreleased — Phase 4
+
+- Adopted user-selected Prism logo with native reproducible icon export.
+- Connected the shared Signal Path evaluator to actual file/decoder/mixer/session/route observations.
+- Added six-stage evidence-labelled Signal Path UI and memory-only route/interruption events.
+- Added invalidation coverage for inactive, interrupted, stopped and ambiguous-output states.
+- Preserved no-bit-verification policy; physical DAC properties remain unknown.
