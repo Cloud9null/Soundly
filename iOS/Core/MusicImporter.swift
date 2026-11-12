@@ -71,7 +71,7 @@ actor MusicImporter {
                FileManager.default.fileExists(atPath:try LibraryPaths.directory("Music").appendingPathComponent(existing).path) {
                 state.duplicates += 1; return
             }
-            let metadata = try await MetadataReader.read(staging)
+            let metadata = try await MetadataReader.read(staging,fallbackTitle:source.deletingPathExtension().lastPathComponent)
             try Task.checkCancellation()
             let filename = hash + "." + source.pathExtension.lowercased()
             let destination = try LibraryPaths.directory("Music").appendingPathComponent(filename)

@@ -105,7 +105,7 @@ actor LibraryWriter {
             try Task.checkCancellation()
             let url = music.appendingPathComponent(song.filename)
             song.available = FileManager.default.fileExists(atPath:url.path)
-            if song.available, let m = try? await MetadataReader.read(url) {
+            if song.available, let m = try? await MetadataReader.read(url,fallbackTitle:song.title) {
                 song.title = m.title; song.artist = m.artist; song.album = m.album
                 song.albumArtist = m.albumArtist; song.genre = m.genre; song.composer = m.composer
                 song.trackNumber = m.track; song.discNumber = m.disc

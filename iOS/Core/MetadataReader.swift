@@ -21,13 +21,13 @@ struct MusicMetadata: Sendable {
 }
 
 enum MetadataReader {
-    static func read(_ url: URL) async throws -> MusicMetadata {
+    static func read(_ url: URL, fallbackTitle: String? = nil) async throws -> MusicMetadata {
         let file = try AVAudioFile(forReading: url)
         let format = file.processingFormat
         guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 1) else { throw CocoaError(.fileReadCorruptFile) }
         try file.read(into: buffer, frameCount: 1)
         guard buffer.frameLength > 0 else { throw CocoaError(.fileReadCorruptFile) }
-        var m = MusicMetadata(); m.title = url.deletingPathExtension().lastPathComponent
+        var m = MusicMetadata(); m.title = fallbackTitle ?? url.deletingPathExtension().lastPathComponent
         m.rate = format.sampleRate; m.channels = Int(format.channelCount)
         m.duration = Double(file.length) / format.sampleRate
         let asbd = file.fileFormat.streamDescription.pointee
