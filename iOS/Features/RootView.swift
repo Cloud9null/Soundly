@@ -4,7 +4,10 @@ import SwiftData
 struct RootView: View {
     @AppStorage("theme") private var theme = SoundlyTheme.system.rawValue
     @State private var nowPlaying = false
-    @State private var selected: Song?
+    @State private var playback = PlaybackController()
+    @Environment(\.modelContext) private var context
+    @Query(sort:\Song.title) private var songs:[Song]
+    private var selected: PlaybackTrack? { playback.current }
     @State private var importer = ImportController()
     private var appearance: SoundlyTheme { SoundlyTheme(rawValue: theme) ?? .system }
     var body: some View {
@@ -14,6 +17,9 @@ struct RootView: View {
             Tab("Settings", systemImage: "slider.horizontal.3") { NavigationStack { SettingsView() } }
         }
         .environment(importer)
+        .environment(playback)
+        .environment(\.soundlySurface,appearance.surface)
+        .task { playback.attach(context) }
         .tabViewBottomAccessory {
             Button { nowPlaying = true } label: {
                 HStack(spacing: 12) {
@@ -22,16 +28,23 @@ struct RootView: View {
                         Text(selected?.title ?? "Your music awaits").font(.subheadline.weight(.semibold)).lineLimit(1)
                         Text(selected?.artist ?? "No track selected").font(.caption).foregroundStyle(.secondary).lineLimit(1)
                     }
-                    Spacer(); Image(systemName:"music.note")
+                    Spacer()
+                    if selected != nil {
+                        Image(systemName:playback.audio.playing ? "pause.fill" : "play.fill")
+                            .onTapGesture { playback.toggle() }
+                            .accessibilityLabel(playback.audio.playing ? "Pause" : "Play")
+                            .accessibilityAddTraits(.isButton)
+                    } else { Image(systemName:"music.note") }
                 }.padding(.horizontal).padding(.vertical,8).contentShape(Rectangle())
             }.buttonStyle(.plain).accessibilityLabel(selected == nil ? "Open Now Playing. No track selected" : "Open Now Playing")
         }
-        .sheet(isPresented:$nowPlaying) { NowPlayingView(song:selected) }
+        .sheet(isPresented:$nowPlaying) { NowPlayingView() }
         .tint(appearance.accent).preferredColorScheme(appearance.scheme)
-        .background(appearance == .oled ? Color.black : Color.clear)
+        .background(appearance.surface)
         .sensoryFeedback(.selection,trigger:selected?.id)
+        .alert("Playback",isPresented:Binding(get:{playback.error != nil},set:{ if !$0 { playback.error = nil } })) { Button("OK",role:.cancel) {} } message: { Text(playback.error ?? "") }
     }
-    private func select(_ song: Song) { selected = song; nowPlaying = true }
+    private func select(_ song: Song) { playback.play(song,within:songs); nowPlaying = true }
 }
 
 struct HomeView: View {
@@ -59,7 +72,7 @@ struct HomeView: View {
                 Label("Private by design · Offline by default",systemImage:"lock.shield").font(.footnote).foregroundStyle(.secondary)
                 ImportStatusView()
             }.padding()
-        }.navigationTitle("Listen")
+        }.soundlySurface().navigationTitle("Listen")
     }
     @ViewBuilder private func section(_ title:String,_ items:[Song])->some View {
         if !items.isEmpty {
@@ -96,7 +109,7 @@ struct LibraryView: View {
             }.pickerStyle(.menu).padding(.horizontal)
             SongResults(search:search,mode:mode,favorites:favorites,newest:newest,select:select)
             ImportStatusView().padding(.horizontal)
-        }.navigationTitle("Library").searchable(text:$search,prompt:"Songs, artists or albums")
+        }.soundlySurface().navigationTitle("Library").searchable(text:$search,prompt:"Songs, artists or albums")
         .toolbar {
             ToolbarItem(placement:.topBarLeading) {
                 Menu("Filter",systemImage:"line.3.horizontal.decrease") {
@@ -140,7 +153,7 @@ struct SongResults: View {
                     DisclosureGroup(group) { ForEach(groups[group] ?? []) { row($0) } }
                 }
             }
-        }.listStyle(.plain)
+        }.listStyle(.plain).soundlySurface()
         .alert("Could not save favorite",isPresented:$saveError) { Button("OK",role:.cancel) {} }
     }
     private func row(_ song:Song)->some View {
@@ -201,41 +214,13 @@ struct ImportStatusView: View {
     }
 }
 
-struct NowPlayingView: View {
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-    @Environment(\.dismiss) private var dismiss
-    let song:Song?
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing:28) {
-                    CoverView(artwork:song?.artwork,size:260)
-                    Text(song?.title ?? "Nothing playing").font(.title2.bold())
-                    if let song {
-                        Text(song.artist).font(.title3).foregroundStyle(.secondary)
-                        Text(song.album).foregroundStyle(.secondary)
-                        Text(song.quality).font(.caption.monospaced()).padding().glassEffect()
-                        Text("Source file properties only").font(.caption).foregroundStyle(.secondary)
-                    }
-                    Text("Playback engine pending Phase 3. No audio output has been measured.").foregroundStyle(.secondary).multilineTextAlignment(.center)
-                    Label("Not Bit-Verified",systemImage:"info.circle").padding().glassEffect()
-                }.padding(24)
-            }.background {
-                if let artwork = song?.artwork, !reduceTransparency {
-                    CoverView(artwork:artwork,size:500).blur(radius:80).opacity(0.25).allowsHitTesting(false)
-                }
-            }.navigationTitle("Now Playing").navigationBarTitleDisplayMode(.inline)
-                .toolbar { ToolbarItem(placement:.confirmationAction) { Button("Done") { dismiss() } } }
-        }
-    }
-}
-
 struct SettingsView: View {
     @AppStorage("theme") private var theme = SoundlyTheme.system.rawValue
     @Environment(\.modelContext) private var context
     @Query private var songs:[Song]
     @State private var message:String?
     @State private var busy = false
+    @Environment(PlaybackController.self) private var playback
     var body: some View {
         Form {
             Section("Appearance") {
@@ -280,17 +265,18 @@ struct SettingsView: View {
                 ImportStatusView()
             }
             Section("Audio") {
-                Text("Audio engine pending Phase 3").foregroundStyle(.secondary)
-                Text("No output route or effective sample rate has been measured.").font(.footnote)
+                NavigationLink("Output and signal diagnostics") { AudioDiagnosticsView() }
+                Text("Native-rate request · Unity application gain · No EQ, ReplayGain or crossfade").font(.footnote)
+                Text("Gapless transitions are not yet implemented. Output is Not Bit-Verified.").font(.footnote)
             }
             Section("Privacy") {
                 Label("No accounts, analytics or trackers",systemImage:"lock.shield")
                 Text("Music stays on this device. No external artwork or metadata lookups. Imported music is excluded from device backups; keep your original files.").font(.footnote)
             }
             Section("About") {
-                LabeledContent("Version",value:"0.2.0 (2)")
+                LabeledContent("Version",value:"0.3.0 (3)")
                 Text("Built with Apple frameworks. No third-party runtime code.")
             }
-        }.navigationTitle("Settings")
+        }.soundlySurface().navigationTitle("Settings")
     }
 }
