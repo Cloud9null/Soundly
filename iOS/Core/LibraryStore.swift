@@ -83,7 +83,8 @@ actor LibraryWriter {
         var q = FetchDescriptor<Song>(predicate: #Predicate { $0.fileHash == hash }); q.fetchLimit = 1
         if let existing = try modelContext.fetch(q).first {
             existing.filename = item.filename; existing.available = true
-            try modelContext.save()
+            do { try modelContext.save() }
+            catch { modelContext.rollback(); throw error }
             return false
         }
         modelContext.insert(Song(item))

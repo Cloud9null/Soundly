@@ -96,8 +96,10 @@ final class RealtimeTransportTests: XCTestCase {
         let track = PlaybackTrack(id:UUID(),filename:name,title:"Synthetic route test",artist:"Soundly",album:"Tests",artwork:nil,sourceQuality:"PCM 16-bit / 44.1 kHz")
         let transport = AudioTransport()
         do {
-            let loaded = try await transport.load(track)
-            XCTAssertTrue(loaded.playing); XCTAssertEqual(loaded.duration,2,accuracy:0.001)
+            let loaded = try await transport.load(track,autoplay:false)
+            XCTAssertFalse(loaded.playing); XCTAssertEqual(loaded.sessionRate,0)
+            try await transport.resume()
+             XCTAssertEqual(loaded.duration,2,accuracy:0.001)
             var running = await transport.observation()
             for _ in 0..<10 where running.elapsed <= 0 {
                 try await Task.sleep(for:.milliseconds(100))

@@ -39,6 +39,7 @@ actor AudioTransport {
     private var ended = false
     private var playing = false
     private var attached = false
+    private var configured = false
     private var rateRequestNote: String?
 
     func load(_ track: PlaybackTrack, position: Double = 0, autoplay: Bool = true) throws -> AudioObservation {
@@ -54,8 +55,16 @@ actor AudioTransport {
         let source = try AVAudioFile(forReading:url)
         guard source.length > 0, source.processingFormat.channelCount > 0,
               source.processingFormat.sampleRate > 0 else { throw CocoaError(.fileReadCorruptFile) }
+        if active { try AVAudioSession.sharedInstance().setActive(false); active = false }
+        configured = false; rateRequestNote = nil
+        file = source
+        offset = Self.frame(position,rate:source.processingFormat.sampleRate,length:source.length)
+        if autoplay { try resume() }
+        return observation()
+    }
+
+    private func configureOutput(_ source:AVAudioFile) throws {
         let session = AVAudioSession.sharedInstance()
-        if active { try session.setActive(false); active = false }
         try session.setCategory(.playback,mode:.default,options:[])
         rateRequestNote = nil
         do { try session.setPreferredSampleRate(source.processingFormat.sampleRate) }
@@ -65,10 +74,7 @@ actor AudioTransport {
         engine.disconnectNodeOutput(player)
         PCMGraph.connect(engine:engine,player:player,format:source.processingFormat)
         player.volume = 1; engine.mainMixerNode.outputVolume = 1
-        file = source
-        offset = Self.frame(position,rate:source.processingFormat.sampleRate,length:source.length)
-        if autoplay { try resume() }
-        return observation()
+        configured = true
     }
 
     static func frame(_ seconds: Double, rate: Double, length: AVAudioFramePosition) -> AVAudioFramePosition {
@@ -78,9 +84,10 @@ actor AudioTransport {
     }
 
     func resume() throws {
-        guard file != nil, !playing else { return }
+        guard let file, !playing else { return }
         if ended { offset = 0; ended = false }
-        try AVAudioSession.sharedInstance().setActive(true); active = true
+        if !configured { try configureOutput(file) }
+        else { try AVAudioSession.sharedInstance().setActive(true); active = true }
         try engine.start()
         schedule()
         player.play(); playing = true
@@ -125,7 +132,7 @@ actor AudioTransport {
         active = false
     }
     func resetServices() {
-        stop(); engine = AVAudioEngine(); player = AVAudioPlayerNode(); file = nil; attached = false
+        stop(); engine = AVAudioEngine(); player = AVAudioPlayerNode(); file = nil; attached = false; configured = false
     }
     func observation() -> AudioObservation {
         var value = AudioObservation()
@@ -139,7 +146,7 @@ actor AudioTransport {
             value.elapsed = min(value.duration,Double(frames)/format.sampleRate)
             value.decoderRate = format.sampleRate; value.decoderChannels = Int(format.channelCount)
             value.decoderRepresentation = "\(format.commonFormat == .pcmFormatFloat32 ? "Float32" : String(describing:format.commonFormat)) PCM"
-            value.mixerRate = engine.mainMixerNode.outputFormat(forBus:0).sampleRate
+            if configured { value.mixerRate = engine.mainMixerNode.outputFormat(forBus:0).sampleRate }
         }
         if active {
             let session = AVAudioSession.sharedInstance()
