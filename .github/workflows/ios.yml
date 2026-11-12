@@ -1,7 +1,7 @@
 name: Soundly iOS
 on:
   push:
-    branches: [main]
+    branches: [main, feat/ios-mvp]
   pull_request:
     branches: [main]
 permissions:
