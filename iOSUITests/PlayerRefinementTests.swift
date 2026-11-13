@@ -65,7 +65,11 @@ import XCTest
         for id in ["shuffleButton","repeatButton","openQueue","playbackMenu","nowPlayingDone","favoriteToggle","transportToggle"] {
             let button = app.buttons[id]
             XCTAssertTrue(button.exists); XCTAssertTrue(button.isHittable)
-            XCTAssertGreaterThanOrEqual(button.frame.height,44); XCTAssertGreaterThanOrEqual(button.frame.width,44)
+            // AX converts screen coordinates through floating-point transforms; 44 can return 43.99999999999997.
+            // One millionth of a point tolerates numeric roundoff while retaining the 44-point requirement.
+            let coordinateTolerance = 0.000001
+            XCTAssertGreaterThanOrEqual(button.frame.height+coordinateTolerance,44)
+            XCTAssertGreaterThanOrEqual(button.frame.width+coordinateTolerance,44)
             XCTAssertGreaterThanOrEqual(button.frame.minX,frame.minX); XCTAssertLessThanOrEqual(button.frame.maxX,frame.maxX)
             XCTAssertLessThanOrEqual(button.frame.maxY,frame.maxY)
         }
