@@ -1,0 +1,59 @@
+# Changelog
+
+## Unreleased — Phase 0
+
+- Audited and initialized the private official repository.
+- Selected iOS 26.0, Swift 6, native SwiftUI, local SwiftData and Apple audio adapters.
+- Added the first Swift domain implementation and conservative Signal Path policy.
+- Added 19 domain XCTest methods and macOS package CI.
+- Documented audio/Files restrictions, licensing boundaries, build and evidence requirements.
+
+An iOS app target, importer, player and IPA are pending later phases.
+
+## Unreleased — Phases 1–2
+
+- Added reproducible native Xcode app, themes, Home/Library/Now Playing/Settings and icon.
+- Added private-copy coordinated import, local SwiftData store, real metadata/artwork and deduplication.
+- Added search/favorites/group browsing, local availability/metadata rescan and storage information.
+- Added iOS simulator integration/UI tests, unsigned device build and conditional IPA packaging.
+- Playback remains pending Phase 3; no physical device or bit-perfect verification is claimed.
+
+## Unreleased — Phase 3
+
+- Implemented native file/PCM scheduling, transport, seek, queue, shuffle and repeat.
+- Added system remote controls, local text/timing Now Playing metadata with suggestions excluded, background playback configuration, interruptions, routes and reset handling.
+- Added queue/position restoration and observed output diagnostics; all output remains Not Bit-Verified.
+- Expanded to twelve themes with distinct surfaces/accents and separated mini-player transport from navigation.
+- Added queue/seek regression tests and offline WAV/ALAC PCM graph tests.
+- Gapless transitions, physical output verification and lock-screen artwork remain pending.
+- Fixed a reserved `hash` storage-property collision discovered by actual library tests; renamed the persisted attribute to fileHash with migration mapping.
+- Made the native glass mini-player independently visible/accessibile in every tab and retained its navigation UI assertion.
+
+## Unreleased — Phase 4
+
+- Adopted user-selected Prism logo with native reproducible icon export.
+- Connected the shared Signal Path evaluator to actual file/decoder/mixer/session/route observations.
+- Added six-stage evidence-labelled Signal Path UI and memory-only route/interruption events.
+- Added invalidation coverage for inactive, interrupted, stopped and ambiguous-output states.
+- Preserved no-bit-verification policy; physical DAC properties remain unknown.
+
+## Unreleased — Phase 5
+
+- Added bounded offline integer PCM reference generation/comparison with decoded PCM hashes, whole-frame alignment, channel/volume/rail/mismatch reports and no physical-verification inference.
+- Added negative controls for single-bit changes, channels, gain, clipping, resampling, dropped frames, invalid containers and ambiguous alignment.
+- Added handwritten WAV/AIFF PCM16/24 offline production-graph matrix tests at six rates, library metadata scale tests and audio path/parser boundary tests.
+- Added native test screenshots and an accessibility label/touch-target check; expanded mini-player navigation to a minimum 44-point target.
+- Replaced the separate simulator capture with bounded export of actual XCTest attachments.
+- Version 0.5.0/build 5. Execution and physical limitations must be recorded in the verification report; authored tests alone do not prove passing results.
+- Native screenshot review found and corrected misleading empty/search messages and a missing Source-card icon. Mini-player VoiceOver value now includes title/artist; added a real unmatched-query UI regression.
+
+## Unreleased — Phase 6 refinement
+
+- Refined the native iOS tab-bar accessory mini-player, glass secondary-control capsule/quality badge/dismiss control, quieter Home hierarchy and monochrome artwork close control.
+
+- Rebuilt Now Playing as an artwork-led full-screen native player with icon-only controls, immersive artwork, native system volume and a quality disclosure sheet.
+- Added library/queue numbering and counts, compact mini-player transport, and separate shuffle/repeat/favorite/queue accessibility labels.
+- Added a direct player-to-output path for matching observed formats, explicit mixer fallback, requested/actual rate reporting and separate rate versus representation-conversion explanations.
+- Added whole-library byte-identical duplicate scan/review/removal, actual hash revalidation, one-copy retention, history/favorite merging, shared-file safety and crash-recovery journalling.
+- Expanded offline PCM matrices to direct and mixer paths, added deletion/recovery/path tests and populated-player/accessibility-size/duplicate UI flows using real generated PCM/artwork. Test fixtures are DEBUG-only and isolated from the real library.
+- Version 0.6.0/build 6 passed unsigned Release and 80 unique tests; 48 offline PCM cases had zero numerical mismatches. Sixteen native screenshots and the actual arm64 device IPA were downloaded and inspected. Physical device/DAC acceptance remains pending; see PHASE-6-VERIFICATION.md.

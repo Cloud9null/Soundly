@@ -1,0 +1,641 @@
+// !$*UTF8*$!
+{
+"archiveVersion" = "1";
+"classes" = {
+};
+"objectVersion" = "56";
+"objects" = {
+"F8D3BEB5D44C090D77E159F0" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "iOS/App/DebugFixtures.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"895917E7632CCFD296DEA882" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "iOS/App/SoundlyApp.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"A5D8593B06644507685DAD52" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "iOS/Core/Audio/AudioTransport.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"59C7DA32C057406170761FA2" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "iOS/Core/Audio/LiveSignalPath.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"5AA9C6E9EFB1B8104F5F0603" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "iOS/Core/Audio/PlaybackController.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"0098593D99406BCC3042EF99" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "iOS/Core/Audio/PlaybackQueue.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"FFE198E1068963A9CD1912B4" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "iOS/Core/Audio/SourceFormatInspector.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"FC609DEADC381BD2C3BD74D1" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "iOS/Core/DuplicateManager.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"B3C9BB7AFE092B14B28AB338" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "iOS/Core/LibraryStore.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"9C401B7AD729B39938177BD4" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "iOS/Core/MetadataReader.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"440C844D79911784BDAC042E" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "iOS/Core/MusicImporter.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"F08F7C31C751E392E3D29620" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "iOS/DesignSystem/Appearance.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"03853257D729CAC70B7F8AAE" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "iOS/Features/DocumentPicker.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"5E6A2BDD0293A698BC8B1416" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "iOS/Features/DuplicateView.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"E5D4AEE82540BE209B0D1F8E" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "iOS/Features/NowPlayingView.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"D7600DE2FF8A29A374CCD7F0" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "iOS/Features/RootView.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"8A7778AAE63752DE4717AD61" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "iOS/Features/SignalPathView.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"4B525F1A16BB4F0F61577DDE" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "Sources/SoundlyCore/Audio/PCMFormat.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"7FCCCD6C0809D9780DCD8570" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "Sources/SoundlyCore/Library/Track.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"FCC690E777C3FA7B1BDEDBD4" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "Sources/SoundlyCore/SignalPath/SignalPath.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"EEC4503C47082D5F68806761" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "folder.assetcatalog";
+"path" = "iOS/Resources/Assets.xcassets";
+"sourceTree" = "SOURCE_ROOT";
+};
+"FBE109F903D2791556A8CF9E" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "text.xml";
+"path" = "iOS/Resources/PrivacyInfo.xcprivacy";
+"sourceTree" = "SOURCE_ROOT";
+};
+"0CA2AFD3A4E8F5335EDADA5B" = {
+"isa" = "PBXFileReference";
+"explicitFileType" = "wrapper.application";
+"path" = "Soundly.app";
+"sourceTree" = "BUILT_PRODUCTS_DIR";
+};
+"30B587CC00EB0E71221075DE" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "F8D3BEB5D44C090D77E159F0";
+};
+"52801B047A11F0E70814FE2D" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "895917E7632CCFD296DEA882";
+};
+"E5D46335648F6EC318FDBC26" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "A5D8593B06644507685DAD52";
+};
+"C375736888FFE1F0C91A90CA" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "59C7DA32C057406170761FA2";
+};
+"44C19B8D59C9F6FFCBAA6B25" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "5AA9C6E9EFB1B8104F5F0603";
+};
+"F31DDE855008C5BB6B776C5B" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "0098593D99406BCC3042EF99";
+};
+"881A90C4EE6A8F9B72DECA7D" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "FFE198E1068963A9CD1912B4";
+};
+"11B12E87672935F064FC82FB" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "FC609DEADC381BD2C3BD74D1";
+};
+"BF5FFA4A038A9FE7CDE127B5" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "B3C9BB7AFE092B14B28AB338";
+};
+"09F5C3130763251A20C238C7" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "9C401B7AD729B39938177BD4";
+};
+"11A14455E331768180652DFF" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "440C844D79911784BDAC042E";
+};
+"0A84F31124C1E1003225C4E5" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "F08F7C31C751E392E3D29620";
+};
+"B22D1FB4EDC1190B03C9C355" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "03853257D729CAC70B7F8AAE";
+};
+"AC0C532253F2922940CCC3D8" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "5E6A2BDD0293A698BC8B1416";
+};
+"32F05504056EB7FAE9636F15" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "E5D4AEE82540BE209B0D1F8E";
+};
+"7731C74C79FFC3B14F2F9529" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "D7600DE2FF8A29A374CCD7F0";
+};
+"562C52F717DF7E6DD6ABB460" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "8A7778AAE63752DE4717AD61";
+};
+"CB30C3A9252B5F4779A3FEE7" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "4B525F1A16BB4F0F61577DDE";
+};
+"714A4ABF10B74DCAAFC79141" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "7FCCCD6C0809D9780DCD8570";
+};
+"3317EDF392EC267719626C63" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "FCC690E777C3FA7B1BDEDBD4";
+};
+"20B0B57052F007457430F8B2" = {
+"isa" = "PBXSourcesBuildPhase";
+"buildActionMask" = "2147483647";
+"files" = ("30B587CC00EB0E71221075DE","52801B047A11F0E70814FE2D","E5D46335648F6EC318FDBC26","C375736888FFE1F0C91A90CA","44C19B8D59C9F6FFCBAA6B25","F31DDE855008C5BB6B776C5B","881A90C4EE6A8F9B72DECA7D","11B12E87672935F064FC82FB","BF5FFA4A038A9FE7CDE127B5","09F5C3130763251A20C238C7","11A14455E331768180652DFF","0A84F31124C1E1003225C4E5","B22D1FB4EDC1190B03C9C355","AC0C532253F2922940CCC3D8","32F05504056EB7FAE9636F15","7731C74C79FFC3B14F2F9529","562C52F717DF7E6DD6ABB460","CB30C3A9252B5F4779A3FEE7","714A4ABF10B74DCAAFC79141","3317EDF392EC267719626C63");
+"runOnlyForDeploymentPostprocessing" = "0";
+};
+"8631E342C3D63FF082629BA6" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "EEC4503C47082D5F68806761";
+};
+"AD38CEC918F516D7485940F4" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "FBE109F903D2791556A8CF9E";
+};
+"D9B3C2079978D81A1D3E182D" = {
+"isa" = "PBXResourcesBuildPhase";
+"buildActionMask" = "2147483647";
+"files" = ("8631E342C3D63FF082629BA6","AD38CEC918F516D7485940F4");
+"runOnlyForDeploymentPostprocessing" = "0";
+};
+"C6507401EBAE976C6928F43D" = {
+"isa" = "PBXFrameworksBuildPhase";
+"buildActionMask" = "2147483647";
+"files" = ();
+"runOnlyForDeploymentPostprocessing" = "0";
+};
+"A7850EB237D8B122EA358B74" = {
+"isa" = "PBXShellScriptBuildPhase";
+"buildActionMask" = "2147483647";
+"files" = ();
+"inputPaths" = ("$(SRCROOT)/Brand/Prism-master.png");
+"outputPaths" = ("$(SRCROOT)/iOS/Resources/Assets.xcassets/AppIcon.appiconset/Icon.png");
+"runOnlyForDeploymentPostprocessing" = "0";
+"shellPath" = "/bin/sh";
+"shellScript" = "set -eu\n/usr/bin/sips -z 1024 1024 \"$SRCROOT/Brand/Prism-master.png\" --out \"$SRCROOT/iOS/Resources/Assets.xcassets/AppIcon.appiconset/Icon.png\" >/dev/null\n";
+"alwaysOutOfDate" = "1";
+};
+"B2FD380DDD05C73E9B655613" = {
+"isa" = "XCBuildConfiguration";
+"name" = "Debug";
+"buildSettings" = {
+"PRODUCT_BUNDLE_IDENTIFIER" = "app.soundly.player";
+"PRODUCT_NAME" = "$(TARGET_NAME)";
+"SWIFT_VERSION" = "6.0";
+"IPHONEOS_DEPLOYMENT_TARGET" = "26.0";
+"TARGETED_DEVICE_FAMILY" = "1";
+"SDKROOT" = "iphoneos";
+"CODE_SIGN_STYLE" = "Automatic";
+"GENERATE_INFOPLIST_FILE" = "NO";
+"SWIFT_OPTIMIZATION_LEVEL" = "-Onone";
+"ENABLE_TESTABILITY" = "YES";
+"SWIFT_ACTIVE_COMPILATION_CONDITIONS" = "DEBUG";
+"INFOPLIST_FILE" = "iOS/Resources/Info.plist";
+"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
+"MARKETING_VERSION" = "0.6.0";
+"CURRENT_PROJECT_VERSION" = "6";
+};
+};
+"62BC06C1F823C5910A16E306" = {
+"isa" = "XCBuildConfiguration";
+"name" = "Release";
+"buildSettings" = {
+"PRODUCT_BUNDLE_IDENTIFIER" = "app.soundly.player";
+"PRODUCT_NAME" = "$(TARGET_NAME)";
+"SWIFT_VERSION" = "6.0";
+"IPHONEOS_DEPLOYMENT_TARGET" = "26.0";
+"TARGETED_DEVICE_FAMILY" = "1";
+"SDKROOT" = "iphoneos";
+"CODE_SIGN_STYLE" = "Automatic";
+"GENERATE_INFOPLIST_FILE" = "NO";
+"SWIFT_OPTIMIZATION_LEVEL" = "-O";
+"ENABLE_TESTABILITY" = "NO";
+"SWIFT_ACTIVE_COMPILATION_CONDITIONS" = "";
+"INFOPLIST_FILE" = "iOS/Resources/Info.plist";
+"ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
+"MARKETING_VERSION" = "0.6.0";
+"CURRENT_PROJECT_VERSION" = "6";
+};
+};
+"88B650FBEC2E7831CB0D3BDC" = {
+"isa" = "XCConfigurationList";
+"buildConfigurations" = ("B2FD380DDD05C73E9B655613","62BC06C1F823C5910A16E306");
+"defaultConfigurationIsVisible" = "0";
+"defaultConfigurationName" = "Release";
+};
+"BFF27BC47DD4187727E62EF4" = {
+"isa" = "PBXNativeTarget";
+"name" = "Soundly";
+"productName" = "Soundly";
+"productType" = "com.apple.product-type.application";
+"productReference" = "0CA2AFD3A4E8F5335EDADA5B";
+"buildConfigurationList" = "88B650FBEC2E7831CB0D3BDC";
+"buildPhases" = ("A7850EB237D8B122EA358B74","20B0B57052F007457430F8B2","D9B3C2079978D81A1D3E182D","C6507401EBAE976C6928F43D");
+"buildRules" = ();
+"dependencies" = ();
+};
+"DA89A8574D8BCA740F473D31" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "iOSTests/AudioPathTests.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"BC7333D2EBC253915A709FEA" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "iOSTests/DuplicateTests.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"73F7079B0B05719009A9AF9E" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "iOSTests/FLACFixtures.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"6A2D60E2D9DC1445ACE13D33" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "iOSTests/FoundationTests.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"56D8C783D6871C5884296C70" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "iOSTests/LibraryIntegrationTests.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"EF07EA143F5EAF95B9826EDB" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "iOSTests/PlaybackTests.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"8636FB0DEC8822CA8CD1DE81" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "iOSTests/QualityTests.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"D95A0FC5AC9AAF58A58CD826" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "iOSTests/SignalPathIntegrationTests.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"927BBDBE4006616CC77DB4F4" = {
+"isa" = "PBXFileReference";
+"explicitFileType" = "wrapper.cfbundle";
+"path" = "SoundlyTests.xctest";
+"sourceTree" = "BUILT_PRODUCTS_DIR";
+};
+"4390F562FFEB04A7D584779B" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "DA89A8574D8BCA740F473D31";
+};
+"9EF08368A8C23A00F828BB14" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "BC7333D2EBC253915A709FEA";
+};
+"4F2C4B2A2464A3531492C87C" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "73F7079B0B05719009A9AF9E";
+};
+"7B80AE91957EBE984387D4C4" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "6A2D60E2D9DC1445ACE13D33";
+};
+"8C93647750204CCA0384DE39" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "56D8C783D6871C5884296C70";
+};
+"C14346793034E86D692F9800" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "EF07EA143F5EAF95B9826EDB";
+};
+"016FE30AC20DE92AD1FB855D" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "8636FB0DEC8822CA8CD1DE81";
+};
+"B4D257B586789B3950EF7557" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "D95A0FC5AC9AAF58A58CD826";
+};
+"E3DD1D295DB08CF588E357FB" = {
+"isa" = "PBXSourcesBuildPhase";
+"buildActionMask" = "2147483647";
+"files" = ("4390F562FFEB04A7D584779B","9EF08368A8C23A00F828BB14","4F2C4B2A2464A3531492C87C","7B80AE91957EBE984387D4C4","8C93647750204CCA0384DE39","C14346793034E86D692F9800","016FE30AC20DE92AD1FB855D","B4D257B586789B3950EF7557");
+"runOnlyForDeploymentPostprocessing" = "0";
+};
+"C9FF7A8F41E403F8340D6A68" = {
+"isa" = "PBXResourcesBuildPhase";
+"buildActionMask" = "2147483647";
+"files" = ();
+"runOnlyForDeploymentPostprocessing" = "0";
+};
+"059B9EE3F93110C61FABC160" = {
+"isa" = "PBXFrameworksBuildPhase";
+"buildActionMask" = "2147483647";
+"files" = ();
+"runOnlyForDeploymentPostprocessing" = "0";
+};
+"DDAEF62C95ECF43C8033F5E1" = {
+"isa" = "XCBuildConfiguration";
+"name" = "Debug";
+"buildSettings" = {
+"PRODUCT_BUNDLE_IDENTIFIER" = "app.soundly.player.SoundlyTests";
+"PRODUCT_NAME" = "$(TARGET_NAME)";
+"SWIFT_VERSION" = "6.0";
+"IPHONEOS_DEPLOYMENT_TARGET" = "26.0";
+"TARGETED_DEVICE_FAMILY" = "1";
+"SDKROOT" = "iphoneos";
+"CODE_SIGN_STYLE" = "Automatic";
+"GENERATE_INFOPLIST_FILE" = "YES";
+"SWIFT_OPTIMIZATION_LEVEL" = "-Onone";
+"ENABLE_TESTABILITY" = "YES";
+"SWIFT_ACTIVE_COMPILATION_CONDITIONS" = "DEBUG";
+"TEST_HOST" = "$(BUILT_PRODUCTS_DIR)/Soundly.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Soundly";
+"BUNDLE_LOADER" = "$(TEST_HOST)";
+};
+};
+"8C2544BCB4BF3038E1377AE3" = {
+"isa" = "XCBuildConfiguration";
+"name" = "Release";
+"buildSettings" = {
+"PRODUCT_BUNDLE_IDENTIFIER" = "app.soundly.player.SoundlyTests";
+"PRODUCT_NAME" = "$(TARGET_NAME)";
+"SWIFT_VERSION" = "6.0";
+"IPHONEOS_DEPLOYMENT_TARGET" = "26.0";
+"TARGETED_DEVICE_FAMILY" = "1";
+"SDKROOT" = "iphoneos";
+"CODE_SIGN_STYLE" = "Automatic";
+"GENERATE_INFOPLIST_FILE" = "YES";
+"SWIFT_OPTIMIZATION_LEVEL" = "-O";
+"ENABLE_TESTABILITY" = "NO";
+"SWIFT_ACTIVE_COMPILATION_CONDITIONS" = "";
+"TEST_HOST" = "$(BUILT_PRODUCTS_DIR)/Soundly.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Soundly";
+"BUNDLE_LOADER" = "$(TEST_HOST)";
+};
+};
+"A9BB2ABA89BBAA6A75664E00" = {
+"isa" = "XCConfigurationList";
+"buildConfigurations" = ("DDAEF62C95ECF43C8033F5E1","8C2544BCB4BF3038E1377AE3");
+"defaultConfigurationIsVisible" = "0";
+"defaultConfigurationName" = "Release";
+};
+"D1E408309BEC14AE56FCE8B0" = {
+"isa" = "PBXTargetDependency";
+"target" = "BFF27BC47DD4187727E62EF4";
+};
+"5883DF68709463E4A2785111" = {
+"isa" = "PBXNativeTarget";
+"name" = "SoundlyTests";
+"productName" = "SoundlyTests";
+"productType" = "com.apple.product-type.bundle.unit-test";
+"productReference" = "927BBDBE4006616CC77DB4F4";
+"buildConfigurationList" = "A9BB2ABA89BBAA6A75664E00";
+"buildPhases" = ("E3DD1D295DB08CF588E357FB","C9FF7A8F41E403F8340D6A68","059B9EE3F93110C61FABC160");
+"buildRules" = ();
+"dependencies" = ("D1E408309BEC14AE56FCE8B0");
+};
+"9906CC19241F80A5432922A4" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "iOSUITests/NavigationTests.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"5A0D7C87ED7E9D598DE0FD57" = {
+"isa" = "PBXFileReference";
+"lastKnownFileType" = "sourcecode.swift";
+"path" = "iOSUITests/PlayerRefinementTests.swift";
+"sourceTree" = "SOURCE_ROOT";
+};
+"549CB3154F21060B3B4C9536" = {
+"isa" = "PBXFileReference";
+"explicitFileType" = "wrapper.cfbundle";
+"path" = "SoundlyUITests.xctest";
+"sourceTree" = "BUILT_PRODUCTS_DIR";
+};
+"5C1B7F5384D6D5AB33BDC55C" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "9906CC19241F80A5432922A4";
+};
+"E3AA0491620E716FFA3CAC26" = {
+"isa" = "PBXBuildFile";
+"fileRef" = "5A0D7C87ED7E9D598DE0FD57";
+};
+"36D77F6939D81F95D1844AE5" = {
+"isa" = "PBXSourcesBuildPhase";
+"buildActionMask" = "2147483647";
+"files" = ("5C1B7F5384D6D5AB33BDC55C","E3AA0491620E716FFA3CAC26");
+"runOnlyForDeploymentPostprocessing" = "0";
+};
+"B73D03252DE18E3BF58D8440" = {
+"isa" = "PBXResourcesBuildPhase";
+"buildActionMask" = "2147483647";
+"files" = ();
+"runOnlyForDeploymentPostprocessing" = "0";
+};
+"8366652BCB9D1FFCD124188D" = {
+"isa" = "PBXFrameworksBuildPhase";
+"buildActionMask" = "2147483647";
+"files" = ();
+"runOnlyForDeploymentPostprocessing" = "0";
+};
+"4239F9ACEB20E4CF8324FB27" = {
+"isa" = "XCBuildConfiguration";
+"name" = "Debug";
+"buildSettings" = {
+"PRODUCT_BUNDLE_IDENTIFIER" = "app.soundly.player.SoundlyUITests";
+"PRODUCT_NAME" = "$(TARGET_NAME)";
+"SWIFT_VERSION" = "6.0";
+"IPHONEOS_DEPLOYMENT_TARGET" = "26.0";
+"TARGETED_DEVICE_FAMILY" = "1";
+"SDKROOT" = "iphoneos";
+"CODE_SIGN_STYLE" = "Automatic";
+"GENERATE_INFOPLIST_FILE" = "YES";
+"SWIFT_OPTIMIZATION_LEVEL" = "-Onone";
+"ENABLE_TESTABILITY" = "YES";
+"SWIFT_ACTIVE_COMPILATION_CONDITIONS" = "DEBUG";
+"TEST_TARGET_NAME" = "Soundly";
+};
+};
+"79FD214A8F8D69A42AD9E24A" = {
+"isa" = "XCBuildConfiguration";
+"name" = "Release";
+"buildSettings" = {
+"PRODUCT_BUNDLE_IDENTIFIER" = "app.soundly.player.SoundlyUITests";
+"PRODUCT_NAME" = "$(TARGET_NAME)";
+"SWIFT_VERSION" = "6.0";
+"IPHONEOS_DEPLOYMENT_TARGET" = "26.0";
+"TARGETED_DEVICE_FAMILY" = "1";
+"SDKROOT" = "iphoneos";
+"CODE_SIGN_STYLE" = "Automatic";
+"GENERATE_INFOPLIST_FILE" = "YES";
+"SWIFT_OPTIMIZATION_LEVEL" = "-O";
+"ENABLE_TESTABILITY" = "NO";
+"SWIFT_ACTIVE_COMPILATION_CONDITIONS" = "";
+"TEST_TARGET_NAME" = "Soundly";
+};
+};
+"45824756C29B9FFA662E0253" = {
+"isa" = "XCConfigurationList";
+"buildConfigurations" = ("4239F9ACEB20E4CF8324FB27","79FD214A8F8D69A42AD9E24A");
+"defaultConfigurationIsVisible" = "0";
+"defaultConfigurationName" = "Release";
+};
+"BFF401B729917D17D60A9330" = {
+"isa" = "PBXTargetDependency";
+"target" = "BFF27BC47DD4187727E62EF4";
+};
+"8623C5896B4117756051182D" = {
+"isa" = "PBXNativeTarget";
+"name" = "SoundlyUITests";
+"productName" = "SoundlyUITests";
+"productType" = "com.apple.product-type.bundle.ui-testing";
+"productReference" = "549CB3154F21060B3B4C9536";
+"buildConfigurationList" = "45824756C29B9FFA662E0253";
+"buildPhases" = ("36D77F6939D81F95D1844AE5","B73D03252DE18E3BF58D8440","8366652BCB9D1FFCD124188D");
+"buildRules" = ();
+"dependencies" = ("BFF401B729917D17D60A9330");
+};
+"FBDC4F23F93125BBEEAE800C" = {
+"isa" = "PBXGroup";
+"name" = "Products";
+"children" = ("0CA2AFD3A4E8F5335EDADA5B","927BBDBE4006616CC77DB4F4","549CB3154F21060B3B4C9536");
+"sourceTree" = "<group>";
+};
+"B28B7AF69320201D1CF206EB" = {
+"isa" = "PBXGroup";
+"children" = ("F8D3BEB5D44C090D77E159F0","895917E7632CCFD296DEA882","A5D8593B06644507685DAD52","59C7DA32C057406170761FA2","5AA9C6E9EFB1B8104F5F0603","0098593D99406BCC3042EF99","FFE198E1068963A9CD1912B4","FC609DEADC381BD2C3BD74D1","B3C9BB7AFE092B14B28AB338","9C401B7AD729B39938177BD4","440C844D79911784BDAC042E","F08F7C31C751E392E3D29620","03853257D729CAC70B7F8AAE","5E6A2BDD0293A698BC8B1416","E5D4AEE82540BE209B0D1F8E","D7600DE2FF8A29A374CCD7F0","8A7778AAE63752DE4717AD61","4B525F1A16BB4F0F61577DDE","7FCCCD6C0809D9780DCD8570","FCC690E777C3FA7B1BDEDBD4","EEC4503C47082D5F68806761","FBE109F903D2791556A8CF9E","DA89A8574D8BCA740F473D31","BC7333D2EBC253915A709FEA","73F7079B0B05719009A9AF9E","6A2D60E2D9DC1445ACE13D33","56D8C783D6871C5884296C70","EF07EA143F5EAF95B9826EDB","8636FB0DEC8822CA8CD1DE81","D95A0FC5AC9AAF58A58CD826","9906CC19241F80A5432922A4","5A0D7C87ED7E9D598DE0FD57","FBDC4F23F93125BBEEAE800C");
+"sourceTree" = "<group>";
+};
+"1C6332C759B35B5B3487F3CD" = {
+"isa" = "XCBuildConfiguration";
+"name" = "Debug";
+"buildSettings" = {
+"CLANG_ENABLE_MODULES" = "YES";
+"CLANG_ENABLE_OBJC_ARC" = "YES";
+"DEBUG_INFORMATION_FORMAT" = "dwarf";
+"SWIFT_STRICT_CONCURRENCY" = "complete";
+};
+};
+"8B7212A5EF49F64ACD4F072A" = {
+"isa" = "XCBuildConfiguration";
+"name" = "Release";
+"buildSettings" = {
+"CLANG_ENABLE_MODULES" = "YES";
+"CLANG_ENABLE_OBJC_ARC" = "YES";
+"DEBUG_INFORMATION_FORMAT" = "dwarf-with-dsym";
+"SWIFT_STRICT_CONCURRENCY" = "complete";
+};
+};
+"862894B703A6DEDF96A9DD6C" = {
+"isa" = "XCConfigurationList";
+"buildConfigurations" = ("1C6332C759B35B5B3487F3CD","8B7212A5EF49F64ACD4F072A");
+"defaultConfigurationIsVisible" = "0";
+"defaultConfigurationName" = "Release";
+};
+"98F54143AB4E86B28C3AFEE0" = {
+"isa" = "PBXProject";
+"attributes" = {
+"LastUpgradeCheck" = "2630";
+"BuildIndependentTargetsInParallel" = "YES";
+};
+"buildConfigurationList" = "862894B703A6DEDF96A9DD6C";
+"compatibilityVersion" = "Xcode 14.0";
+"developmentRegion" = "en";
+"knownRegions" = ("en","Base");
+"mainGroup" = "B28B7AF69320201D1CF206EB";
+"productRefGroup" = "FBDC4F23F93125BBEEAE800C";
+"projectDirPath" = "";
+"projectRoot" = "";
+"targets" = ("BFF27BC47DD4187727E62EF4","5883DF68709463E4A2785111","8623C5896B4117756051182D");
+};
+};
+"rootObject" = "98F54143AB4E86B28C3AFEE0";
+}

@@ -1,0 +1,54 @@
+name: Soundly Core
+
+on:
+  push:
+    branches: [main, feat/ios-mvp]
+    paths: ["Sources/**", "Tests/**", "Package.swift", ".github/workflows/core.yml"]
+  pull_request:
+    branches: [main]
+    paths: ["Sources/**", "Tests/**", "Package.swift", ".github/workflows/core.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: core-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core-tests:
+    runs-on: macos-26
+    timeout-minutes: 15
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Record actual compiler and SDKs
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          xcodebuild -showsdks
+          swift --version
+      - name: Resolve local package
+        run: swift package resolve
+      - name: Build and test domain code in Swift 6
+        run: |
+          set -euo pipefail
+          swift test 2>&1 | tee core-tests.log
+      - name: Preserve compiler and test log
+        if: always() && !cancelled()
+        continue-on-error: true # Console logs remain available if account artifact quota is exhausted.
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: soundly-core-test-log
+          path: core-tests.log
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Record evidence location
+        if: always() && !cancelled()
+        run: |
+          echo '## Soundly Core verification' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Compiler versions and complete build/test output are in the job console. A failed test fails the job; separate log artifact upload is best-effort and may be blocked by account storage quota.' >> "$GITHUB_STEP_SUMMARY"
