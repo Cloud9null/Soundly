@@ -79,6 +79,17 @@ final class PlaybackController {
         else { queue.previous(); load() }
     }
     func choose(_ id:UUID) { queue.select(id); load() }
+    func removeLibraryTracks(_ ids:Set<UUID>) {
+        let changed = current.map { ids.contains($0.id) } ?? false
+        queue.remove(ids)
+        if changed {
+            submit { [transport] in await transport.stop() }
+            audio = AudioObservation()
+            if current != nil { load(autoplay:false,recordPlay:false) }
+        }
+        if current == nil { audio = AudioObservation(); updateSystemMetadata() }
+        persist()
+    }
     func toggleShuffle() { queue.shuffle.toggle(); persist() }
     func cycleRepeat() {
         switch queue.repeatMode { case .off: queue.repeatMode = .all; case .all: queue.repeatMode = .one; case .one: queue.repeatMode = .off }
@@ -94,7 +105,7 @@ final class PlaybackController {
             var q = FetchDescriptor<Song>(predicate:#Predicate { $0.id == id }); q.fetchLimit = 1
             if let song = try? context.fetch(q).first {
                 // A successful engine start, not proof that a complete song was heard.
-                song.lastPlayed = Date(); song.playCount += 1
+                song.lastPlayed = Date(); if song.playCount < Int.max { song.playCount += 1 }
                 do { try context.save() } catch { context.rollback() }
             }
         })

@@ -10,6 +10,7 @@ struct SignalPathView: View {
                 Label(report.assessment.status.rawValue,systemImage:statusSymbol).font(.title2.bold())
                     .accessibilityIdentifier("signalPathStatus")
                 Text(report.assessment.explanation).foregroundStyle(.secondary)
+                Label(report.rateSummary,systemImage:"waveform.path").font(.headline).accessibilityIdentifier("rateSummary")
                 if !playback.audio.playing { Label("Playback is paused or stopped. Values describe observed configuration, not verified output samples.",systemImage:"pause.circle").font(.footnote) }
                 stage("1",title:"Source",evidence:"FILE METADATA",icon:"doc") {
                     Text(report.source.codec).font(.headline)
@@ -23,13 +24,14 @@ struct SignalPathView: View {
                 }
                 stage("3",title:"Audio engine",evidence:"API REPORTED",icon:"slider.horizontal.3") {
                     Text(Self.format(snapshot.engineOutput))
-                    Text("AVAudioPlayerNode → Apple main mixer → output")
+                    Text(report.graphPath.description)
                     LabeledContent("Application gain",value:snapshot.engineGain.map { String(format:"%.3f",$0) } ?? "Unknown")
-                    Text(snapshot.processing == .bypassed ? "No optional DSP, EQ, normalization or crossfade. Apple's mixer is present." : "Engine processing has not been observed.")
+                    Text(snapshot.processing == .bypassed ? "No optional DSP, EQ, normalization or crossfade. Integer-to-float decoding remains disclosed; bypassing an app mixer does not bypass iOS processing." : "Engine processing has not been observed.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
                 stage("4",title:"iOS audio session",evidence:"API REPORTED",icon:"iphone") {
                     LabeledContent("Session active",value:snapshot.sessionIsActive ? "Activation observed" : "Not active / not observed")
+                    LabeledContent("Requested rate",value:Self.rate(report.requestedRate))
                     LabeledContent("Effective session rate",value:Self.rate(snapshot.sessionSampleRate))
                     LabeledContent("Output channels",value:snapshot.sessionChannels.map(String.init) ?? "Unknown")
                     LabeledContent("I/O buffer",value:report.bufferDuration.map { String(format:"%.2f ms",$0*1000) } ?? "Unknown")

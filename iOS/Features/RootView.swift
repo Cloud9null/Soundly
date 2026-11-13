@@ -20,7 +20,7 @@ struct RootView: View {
         .environment(playback)
         .environment(\.soundlySurface,appearance.surface)
         .task { playback.attach(context) }
-        .sheet(isPresented:$nowPlaying) {
+        .fullScreenCover(isPresented:$nowPlaying) {
             NowPlayingView().environment(playback).environment(\.soundlySurface,appearance.surface)
                 .modelContainer(context.container).preferredColorScheme(appearance.scheme)
         }
@@ -45,8 +45,10 @@ struct RootView: View {
                 if selected != nil {
                     Button(playback.audio.playing ? "Pause" : "Play",systemImage:playback.audio.playing ? "pause.fill" : "play.fill") { playback.toggle() }
                         .labelStyle(.iconOnly).frame(minWidth:44,minHeight:44)
+                    Button("Next",systemImage:"forward.end.fill") { playback.next() }
+                        .labelStyle(.iconOnly).frame(width:44,height:44)
                 }
-            }.padding(12).glassEffect(in:.rect(cornerRadius:20)).padding(.horizontal,12).padding(.bottom,8)
+            }.buttonStyle(.plain).foregroundStyle(.primary).padding(10).glassEffect(in:.rect(cornerRadius:18)).padding(.horizontal,12).padding(.bottom,6)
     }
     private func select(_ song: Song) { playback.play(song,within:songs); nowPlaying = true }
 }
@@ -143,13 +145,14 @@ struct SongResults: View {
     }
     var body: some View {
         List {
+            if !songs.isEmpty { Text("\(songs.count) songs").font(.caption.weight(.medium)).foregroundStyle(.secondary).accessibilityIdentifier("libraryTrackCount") }
             if songs.isEmpty {
                 if !search.isEmpty { ContentUnavailableView.search(text:search) }
                 else if favorites { ContentUnavailableView("No favorite songs",systemImage:"heart",description:Text("Favorite songs in your library to find them here.")) }
                 else { ContentUnavailableView("Your library is empty",systemImage:"music.note.list",description:Text("Add music files or a folder to start your offline collection.")) }
             }
             if mode == "Songs" {
-                ForEach(songs) { row($0) }
+                ForEach(Array(songs.enumerated()),id:\.element.id) { index, song in row(song,number:index+1) }
             } else {
                 let groups = Dictionary(grouping:songs) { song in
                     switch mode { case "Albums": song.album + " — " + song.albumArtist
@@ -166,9 +169,10 @@ struct SongResults: View {
         }.listStyle(.plain).soundlySurface()
         .alert("Could not save favorite",isPresented:$saveError) { Button("OK",role:.cancel) {} }
     }
-    private func row(_ song:Song)->some View {
+    private func row(_ song:Song,number:Int? = nil)->some View {
         Button { select(song) } label: {
             HStack(spacing:12) {
+                if let number { Text("\(number)").font(.caption.monospacedDigit()).foregroundStyle(.secondary).frame(minWidth:24) }
                 CoverView(artwork:song.artwork)
                 VStack(alignment:.leading,spacing:4) {
                     Text(song.title).foregroundStyle(.primary).lineLimit(1)
@@ -245,6 +249,7 @@ struct SettingsView: View {
                         .navigationTitle("Imported folders")
                         .safeAreaInset(edge:.bottom) { Text("These are private copies. External folders are not linked or monitored.").font(.footnote).padding().background(.regularMaterial) }
                 }
+                NavigationLink("Find duplicates",destination:DuplicateView()).accessibilityIdentifier("manageDuplicates")
                 Button("Rescan local library") {
                     busy = true
                     let container = context.container
@@ -284,7 +289,7 @@ struct SettingsView: View {
                 Text("Music stays on this device. No external artwork or metadata lookups. Imported music is excluded from device backups; keep your original files.").font(.footnote)
             }
             Section("About") {
-                LabeledContent("Version",value:"0.5.0 (5)")
+                LabeledContent("Version",value:"0.6.0 (6)")
                 Text("Built with Apple frameworks. No third-party runtime code.")
             }
         }.soundlySurface().navigationTitle("Settings")

@@ -46,3 +46,12 @@ An iOS app target, importer, player and IPA are pending later phases.
 - Replaced the separate simulator capture with bounded export of actual XCTest attachments.
 - Version 0.5.0/build 5. Execution and physical limitations must be recorded in the verification report; authored tests alone do not prove passing results.
 - Native screenshot review found and corrected misleading empty/search messages and a missing Source-card icon. Mini-player VoiceOver value now includes title/artist; added a real unmatched-query UI regression.
+
+## Unreleased — Phase 6 refinement
+
+- Rebuilt Now Playing as an artwork-led full-screen native player with icon-only controls, immersive artwork, native system volume and a quality disclosure sheet.
+- Added library/queue numbering and counts, compact mini-player transport, and separate shuffle/repeat/favorite/queue accessibility labels.
+- Added a direct player-to-output path for matching observed formats, explicit mixer fallback, requested/actual rate reporting and separate rate versus representation-conversion explanations.
+- Added whole-library byte-identical duplicate scan/review/removal, actual hash revalidation, one-copy retention, history/favorite merging, shared-file safety and crash-recovery journalling.
+- Expanded offline PCM matrices to direct and mixer paths, added deletion/recovery/path tests and populated-player/accessibility-size/duplicate UI flows using real generated PCM/artwork. Test fixtures are DEBUG-only and isolated from the real library.
+- Version 0.6.0/build 6. Actual build/test/IPA results and remaining hardware limitations must be recorded after execution.

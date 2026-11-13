@@ -24,7 +24,8 @@ for name,folder,kind in [('Soundly','iOS','application'),('SoundlyTests','iOSTes
     cl=[]
     for config in ['Debug','Release']:
         settings={'PRODUCT_BUNDLE_IDENTIFIER':'app.soundly.player'+('' if name=='Soundly' else '.'+name),'PRODUCT_NAME':'$(TARGET_NAME)','SWIFT_VERSION':'6.0','IPHONEOS_DEPLOYMENT_TARGET':'26.0','TARGETED_DEVICE_FAMILY':'1','SDKROOT':'iphoneos','CODE_SIGN_STYLE':'Automatic','GENERATE_INFOPLIST_FILE':'YES','SWIFT_OPTIMIZATION_LEVEL':'-Onone' if config=='Debug' else '-O','ENABLE_TESTABILITY':'YES' if config=='Debug' else 'NO'}
-        if name=='Soundly': settings.update({'GENERATE_INFOPLIST_FILE':'NO','INFOPLIST_FILE':'iOS/Resources/Info.plist','ASSETCATALOG_COMPILER_APPICON_NAME':'AppIcon','MARKETING_VERSION':'0.5.0','CURRENT_PROJECT_VERSION':'5'})
+        settings['SWIFT_ACTIVE_COMPILATION_CONDITIONS'] = 'DEBUG' if config == 'Debug' else ''
+        if name=='Soundly': settings.update({'GENERATE_INFOPLIST_FILE':'NO','INFOPLIST_FILE':'iOS/Resources/Info.plist','ASSETCATALOG_COMPILER_APPICON_NAME':'AppIcon','MARKETING_VERSION':'0.6.0','CURRENT_PROJECT_VERSION':'6'})
         elif name=='SoundlyTests': settings.update({'TEST_HOST':'$(BUILT_PRODUCTS_DIR)/Soundly.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Soundly','BUNDLE_LOADER':'$(TEST_HOST)'})
         else: settings['TEST_TARGET_NAME']='Soundly'
         cl.append(add('config:'+name+config,'XCBuildConfiguration',name=config,buildSettings=settings))

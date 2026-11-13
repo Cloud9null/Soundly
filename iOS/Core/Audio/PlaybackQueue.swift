@@ -8,6 +8,12 @@ struct PlaybackQueue: Codable, Equatable, Sendable {
     var repeatMode: RepeatMode = .off
     var shuffle = false
     var current: PlaybackTrack? { tracks.indices.contains(index) ? tracks[index] : nil }
+    var positionLabel:String { current == nil ? "No track selected" : "Track \(index+1) of \(tracks.count)" }
+    mutating func remove(_ ids:Set<UUID>) {
+        let selected = current?.id
+        tracks.removeAll { ids.contains($0.id) }
+        index = selected.flatMap { id in tracks.firstIndex { $0.id == id } } ?? min(index,max(0,tracks.count-1))
+    }
     mutating func replace(_ items:[PlaybackTrack],starting id:UUID) {
         tracks = items; index = items.firstIndex { $0.id == id } ?? 0
     }

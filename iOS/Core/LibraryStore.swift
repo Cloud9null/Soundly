@@ -53,7 +53,11 @@ struct ImportedSong: Sendable {
 
 enum LibraryPaths {
     static func base() throws -> URL {
-        let url = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true).appendingPathComponent("Soundly", isDirectory: true)
+        var name = "Soundly"
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--soundly-fixtures") { name = "Soundly-UITests" }
+        #endif
+        let url = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true).appendingPathComponent(name, isDirectory: true)
         try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
         var protected = url
         var values = URLResourceValues(); values.isExcludedFromBackup = true

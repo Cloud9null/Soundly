@@ -8,8 +8,10 @@ import SwiftData
 final class PCMMatrixTests: XCTestCase {
     func testWAV16And24BitAcrossSixNativeRates() throws { try matrix(aiff:false) }
     func testAIFF16And24BitAcrossSixNativeRates() throws { try matrix(aiff:true) }
+    func testDirectWAV16And24BitAcrossSixNativeRates() throws { try matrix(aiff:false,direct:true) }
+    func testDirectAIFF16And24BitAcrossSixNativeRates() throws { try matrix(aiff:true,direct:true) }
 
-    private func matrix(aiff:Bool) throws {
+    private func matrix(aiff:Bool,direct:Bool = false) throws {
         let rates = [44100,48000,88200,96000,176400,192000]
         let frames = 2048
         var records:[String] = []
@@ -35,8 +37,9 @@ final class PCMMatrixTests: XCTestCase {
                 XCTAssertEqual(source.pcm?.representation,.signedInteger)
                 let format = try XCTUnwrap(AVAudioFormat(standardFormatWithSampleRate:Double(rate),channels:2))
                 let engine = AVAudioEngine(); let player = AVAudioPlayerNode(); engine.attach(player)
-                PCMGraph.connect(engine:engine,player:player,format:file.processingFormat)
                 try engine.enableManualRenderingMode(.offline,format:format,maximumFrameCount:AVAudioFrameCount(frames))
+                let path = PCMGraph.connect(engine:engine,player:player,format:file.processingFormat,matchingOutput:direct ? format : nil)
+                XCTAssertEqual(path,direct ? .direct : .systemMixer)
                 defer { player.stop(); engine.stop() }
                 player.scheduleFile(file,at:nil)
                 try engine.start(); player.play()
@@ -52,13 +55,13 @@ final class PCMMatrixTests: XCTestCase {
                         if values[channel][frame] != Float(samples[frame*2+channel])/Float(scale) { mismatches += 1 }
                     }
                 }
-                let description = "\(aiff ? "AIFF" : "WAV") / \(bits)-bit / \(rate) Hz / stereo / \(frames) frames"
+                let description = "\(path.rawValue) / \(aiff ? "AIFF" : "WAV") / \(bits)-bit / \(rate) Hz / stereo / \(frames) frames"
                 XCTAssertEqual(mismatches,0,"Exact numeric PCM mismatch: \(description)")
                 records.append("\(description): \(mismatches) mismatched samples")
             }
         }
         let evidence = XCTAttachment(string:records.joined(separator:"\n"))
-        evidence.name = aiff ? "AIFF offline matrix" : "WAV offline matrix"
+        evidence.name = (direct ? "Direct " : "Mixer ") + (aiff ? "AIFF offline matrix" : "WAV offline matrix")
         evidence.lifetime = .keepAlways; add(evidence)
     }
 }

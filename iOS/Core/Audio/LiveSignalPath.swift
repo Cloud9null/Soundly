@@ -6,6 +6,16 @@ struct LiveSignalPath: Sendable {
     var source = SourceAudioInfo()
     var systemVolume: Float?
     var bufferDuration: Double?
+    var requestedRate:Double?
+    var graphPath = AudioGraphPath.unknown
+    var rateSummary:String {
+        guard snapshot.sessionIsActive,
+              let source = snapshot.source, let decoder = snapshot.decoderOutput, let output = snapshot.engineOutput,
+              let rate = snapshot.sessionSampleRate, rate > 0 else { return "Sample-rate path not yet observed" }
+        return Set([source.sampleRate,decoder.sampleRate,output.sampleRate,rate]).count == 1
+            ? "Native rate across observed stages — not bit-verified"
+            : "Sample-rate conversion observed"
+    }
     var assessment: SignalPathAssessment { SignalPathEvaluator.assess(snapshot) }
     static func route(_ portTypes:[String])->OutputRoute {
         guard portTypes.count == 1, let type = portTypes.first else { return .unknown }

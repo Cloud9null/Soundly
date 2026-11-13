@@ -55,6 +55,7 @@ enum ArtworkCache {
 struct CoverView: View {
     var artwork: String? = nil
     var size: CGFloat = 56
+    var cornerRadius:CGFloat? = nil
     @State private var image: UIImage?
     var body: some View {
         ZStack {
@@ -65,7 +66,7 @@ struct CoverView: View {
                 Image(systemName: "waveform").font(.system(size: size * 0.35)).foregroundStyle(.tint)
             }
         }
-        .frame(width:size,height:size).clipShape(RoundedRectangle(cornerRadius:size * 0.13))
+        .frame(width:size,height:size).clipShape(RoundedRectangle(cornerRadius:cornerRadius ?? size * 0.13))
         .accessibilityHidden(true)
         .task(id:artwork) {
             image = nil

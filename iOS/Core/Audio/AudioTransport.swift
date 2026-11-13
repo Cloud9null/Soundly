@@ -43,6 +43,8 @@ actor AudioTransport {
     private var attached = false
     private var configured = false
     private var rateRequestNote: String?
+    private var graphPath = AudioGraphPath.unknown
+    private var requestedRate: Double?
 
     func load(_ track: PlaybackTrack, position: Double = 0, autoplay: Bool = true) throws -> AudioObservation {
         guard track.filename == URL(fileURLWithPath:track.filename).lastPathComponent,
@@ -59,6 +61,7 @@ actor AudioTransport {
               source.processingFormat.sampleRate > 0 else { throw CocoaError(.fileReadCorruptFile) }
         if active { try AVAudioSession.sharedInstance().setActive(false); active = false }
         configured = false; rateRequestNote = nil
+        graphPath = .unknown; requestedRate = nil
         sourceInfo = try SourceFormatInspector.inspect(source,url:url)
         file = source
         offset = Self.frame(position,rate:source.processingFormat.sampleRate,length:source.length)
@@ -70,13 +73,22 @@ actor AudioTransport {
         let session = AVAudioSession.sharedInstance()
         try session.setCategory(.playback,mode:.default,options:[])
         rateRequestNote = nil
-        do { try session.setPreferredSampleRate(source.processingFormat.sampleRate) }
+        let requested = sourceInfo.pcm?.sampleRate ?? source.processingFormat.sampleRate
+        requestedRate = requested
+        do { try session.setPreferredSampleRate(requested) }
         catch { rateRequestNote = "The native-rate request was rejected. Playback uses the session rate reported below." }
         try session.setActive(true); active = true
+        // A fresh graph prevents an old main-mixer connection surviving a direct-path switch.
+        engine = AVAudioEngine(); player = AVAudioPlayerNode(); attached = false
+        let hardware = engine.outputNode.outputFormat(forBus:0)
+        guard hardware.sampleRate > 0, hardware.channelCount > 0 else {
+            throw NSError(domain:"Soundly.Audio",code:1,userInfo:[NSLocalizedDescriptionKey:"No active audio output format is available."])
+        }
+        if session.sampleRate != requested {
+            rateRequestNote = "Requested \(String(format:"%.1f",requested/1000)) kHz; iOS activated \(String(format:"%.1f",session.sampleRate/1000)) kHz. The selected route did not provide the requested rate."
+        }
         if !attached { engine.attach(player); attached = true }
-        engine.disconnectNodeOutput(player)
-        PCMGraph.connect(engine:engine,player:player,format:source.processingFormat)
-        player.volume = 1; engine.mainMixerNode.outputVolume = 1
+        graphPath = PCMGraph.connect(engine:engine,player:player,format:source.processingFormat,matchingOutput:hardware)
         configured = true
     }
 
@@ -90,7 +102,18 @@ actor AudioTransport {
         guard let file, !playing else { return }
         if ended { offset = 0; ended = false }
         if !configured { try configureOutput(file) }
-        else { try AVAudioSession.sharedInstance().setActive(true); active = true }
+        else {
+            let session = AVAudioSession.sharedInstance()
+            try session.setActive(true); active = true
+            let output = engine.outputNode.outputFormat(forBus:0)
+            guard output.sampleRate > 0,output.channelCount > 0 else {
+                throw NSError(domain:"Soundly.Audio",code:1,userInfo:[NSLocalizedDescriptionKey:"The audio output is unavailable. Select an output and try again."])
+            }
+            if graphPath == .direct,PCMGraph.path(source:file.processingFormat,output:output) != .direct {
+                try session.setActive(false); active = false; configured = false
+                try configureOutput(file)
+            }
+        }
         try engine.start()
         schedule()
         player.play(); playing = true
@@ -136,12 +159,14 @@ actor AudioTransport {
         active = false
     }
     func resetServices() {
-        stop(); engine = AVAudioEngine(); player = AVAudioPlayerNode(); file = nil; sourceInfo = SourceAudioInfo(); attached = false; configured = false
+        stop(); engine = AVAudioEngine(); player = AVAudioPlayerNode(); file = nil; sourceInfo = SourceAudioInfo(); attached = false; configured = false; graphPath = .unknown; requestedRate = nil
     }
     func observation() -> AudioObservation {
         var value = AudioObservation()
         value.rateRequestNote = rateRequestNote
         value.signalPath.source = sourceInfo
+        value.signalPath.graphPath = graphPath
+        value.signalPath.requestedRate = requestedRate
         value.signalPath.snapshot.source = sourceInfo.pcm
         value.signalPath.snapshot.sourceIsLossless = sourceInfo.lossless
         value.playing = playing; value.ended = ended
@@ -155,11 +180,11 @@ actor AudioTransport {
             value.decoderRate = format.sampleRate; value.decoderChannels = Int(format.channelCount)
             value.decoderRepresentation = "\(format.commonFormat == .pcmFormatFloat32 ? "Float32" : String(describing:format.commonFormat)) PCM"
             if configured {
-                let mixerFormat = engine.mainMixerNode.outputFormat(forBus:0)
+                let mixerFormat = graphPath == .direct ? engine.outputNode.inputFormat(forBus:0) : engine.mainMixerNode.outputFormat(forBus:0)
                 value.mixerRate = mixerFormat.sampleRate
                 value.signalPath.snapshot.engineOutput = SourceFormatInspector.pcm(mixerFormat)
-                value.signalPath.snapshot.engineGain = Double(player.volume * engine.mainMixerNode.outputVolume)
-                value.signalPath.snapshot.processing = .bypassed // No optional DSP; Apple's mixer is still disclosed.
+                value.signalPath.snapshot.engineGain = Double(player.volume) * (graphPath == .direct ? 1 : Double(engine.mainMixerNode.outputVolume))
+                value.signalPath.snapshot.processing = .bypassed
             }
         }
         if active {
@@ -180,9 +205,30 @@ actor AudioTransport {
 
 /// Shared by production playback and offline PCM regression tests.
 enum PCMGraph {
-    static func connect(engine:AVAudioEngine,player:AVAudioPlayerNode,format:AVAudioFormat) {
-        engine.connect(player,to:engine.mainMixerNode,format:format)
+    static func path(source:AVAudioFormat,output:AVAudioFormat?)->AudioGraphPath {
+        guard let output, output.sampleRate > 0, output.channelCount > 0,
+              source.sampleRate == output.sampleRate, source.channelCount == output.channelCount,
+              source.commonFormat == .pcmFormatFloat32, output.commonFormat == source.commonFormat,
+              source.isInterleaved == output.isInterleaved else { return .systemMixer }
+        return .direct
+    }
+    @discardableResult
+    static func connect(engine:AVAudioEngine,player:AVAudioPlayerNode,format:AVAudioFormat,matchingOutput:AVAudioFormat? = nil)->AudioGraphPath {
+        let selected = path(source:format,output:matchingOutput)
+        if selected == .direct { engine.connect(player,to:engine.outputNode,format:format) }
+        else { engine.connect(player,to:engine.mainMixerNode,format:format); engine.mainMixerNode.outputVolume = 1 }
         player.volume = 1
-        engine.mainMixerNode.outputVolume = 1
+        return selected
+    }
+}
+
+enum AudioGraphPath: String, Sendable {
+    case unknown, direct, systemMixer
+    var description:String {
+        switch self {
+        case .unknown: "Engine path not observed"
+        case .direct: "AVAudioPlayerNode → output (main mixer bypassed)"
+        case .systemMixer: "AVAudioPlayerNode → Apple main mixer → output"
+        }
     }
 }
