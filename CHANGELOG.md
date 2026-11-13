@@ -45,3 +45,4 @@ An iOS app target, importer, player and IPA are pending later phases.
 - Added native test screenshots and an accessibility label/touch-target check; expanded mini-player navigation to a minimum 44-point target.
 - Replaced the separate simulator capture with bounded export of actual XCTest attachments.
 - Version 0.5.0/build 5. Execution and physical limitations must be recorded in the verification report; authored tests alone do not prove passing results.
+- Native screenshot review found and corrected misleading empty/search messages and a missing Source-card icon. Mini-player VoiceOver value now includes title/artist; added a real unmatched-query UI regression.

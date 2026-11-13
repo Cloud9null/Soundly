@@ -9,6 +9,7 @@ final class NavigationTests: XCTestCase {
         capture(app,"Home")
         app.tabBars.buttons["Library"].tap()
         XCTAssertTrue(app.navigationBars["Library"].exists)
+        XCTAssertTrue(app.staticTexts["Your library is empty"].waitForExistence(timeout:3))
         capture(app,"Library")
         app.tabBars.buttons["Settings"].tap()
         XCTAssertTrue(app.descendants(matching:.any)["themePicker"].exists)
@@ -29,9 +30,23 @@ final class NavigationTests: XCTestCase {
         let player = app.buttons["miniPlayerOpen"]
         XCTAssertTrue(player.waitForExistence(timeout:5))
         XCTAssertFalse(player.label.isEmpty)
+        XCTAssertEqual(player.value as? String,"No track selected")
         XCTAssertGreaterThanOrEqual(player.frame.height,44)
         XCTAssertGreaterThanOrEqual(player.frame.width,44)
         try app.performAccessibilityAudit(for:.sufficientElementDescription)
+    }
+    func testEmptySearchMessageUsesActualQuery() {
+        let app = XCUIApplication(); app.launch()
+        XCTAssertTrue(app.navigationBars["Listen"].waitForExistence(timeout:10))
+        app.tabBars.buttons["Library"].tap()
+        let search = app.searchFields.firstMatch
+        XCTAssertTrue(search.waitForExistence(timeout:5))
+        let query = "soundly-reference-no-match"
+        search.tap(); search.typeText(query)
+        let message = app.staticTexts.containing(NSPredicate(format:"label CONTAINS[c] %@ AND label CONTAINS %@","No Results",query)).firstMatch
+        XCTAssertTrue(message.waitForExistence(timeout:5))
+        XCTAssertFalse(app.staticTexts["Your library is empty"].exists)
+        capture(app,"Library — unmatched local search")
     }
     private func capture(_ app:XCUIApplication,_ name:String) {
         let attachment = XCTAttachment(screenshot:app.screenshot())

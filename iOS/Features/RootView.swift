@@ -40,7 +40,8 @@ struct RootView: View {
                         }
                         Spacer()
                     }.frame(minHeight:44).contentShape(Rectangle())
-                }.buttonStyle(.plain).accessibilityIdentifier("miniPlayerOpen").accessibilityLabel(selected == nil ? "Open Now Playing. No track selected" : "Open Now Playing")
+                }.buttonStyle(.plain).accessibilityIdentifier("miniPlayerOpen").accessibilityLabel("Open Now Playing")
+                    .accessibilityValue(selected.map { "\($0.title), \($0.artist)" } ?? "No track selected")
                 if selected != nil {
                     Button(playback.audio.playing ? "Pause" : "Play",systemImage:playback.audio.playing ? "pause.fill" : "play.fill") { playback.toggle() }
                         .labelStyle(.iconOnly).frame(minWidth:44,minHeight:44)
@@ -129,10 +130,12 @@ struct SongResults: View {
     @Environment(\.modelContext) private var context
     @Query private var songs:[Song]
     let mode:String
+    let search:String
+    let favorites:Bool
     let select:(Song)->Void
     @State private var saveError = false
     init(search:String,mode:String,favorites:Bool,newest:Bool,select:@escaping(Song)->Void) {
-        self.mode = mode; self.select = select
+        self.mode = mode; self.select = select; self.search = search; self.favorites = favorites
         let predicate = #Predicate<Song> { song in
             (!favorites || song.favorite) && (search.isEmpty || song.title.localizedStandardContains(search) || song.artist.localizedStandardContains(search) || song.album.localizedStandardContains(search))
         }
@@ -140,7 +143,11 @@ struct SongResults: View {
     }
     var body: some View {
         List {
-            if songs.isEmpty { ContentUnavailableView.search(text:"your library") }
+            if songs.isEmpty {
+                if !search.isEmpty { ContentUnavailableView.search(text:search) }
+                else if favorites { ContentUnavailableView("No favorite songs",systemImage:"heart",description:Text("Favorite songs in your library to find them here.")) }
+                else { ContentUnavailableView("Your library is empty",systemImage:"music.note.list",description:Text("Add music files or a folder to start your offline collection.")) }
+            }
             if mode == "Songs" {
                 ForEach(songs) { row($0) }
             } else {

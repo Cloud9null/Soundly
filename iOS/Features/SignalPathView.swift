@@ -11,7 +11,7 @@ struct SignalPathView: View {
                     .accessibilityIdentifier("signalPathStatus")
                 Text(report.assessment.explanation).foregroundStyle(.secondary)
                 if !playback.audio.playing { Label("Playback is paused or stopped. Values describe observed configuration, not verified output samples.",systemImage:"pause.circle").font(.footnote) }
-                stage("1",title:"Source",evidence:"FILE METADATA",icon:"doc.waveform") {
+                stage("1",title:"Source",evidence:"FILE METADATA",icon:"doc") {
                     Text(report.source.codec).font(.headline)
                     Text(Self.format(snapshot.source))
                     Text(report.source.note).font(.footnote).foregroundStyle(.secondary)
