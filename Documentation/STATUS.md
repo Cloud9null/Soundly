@@ -1,6 +1,6 @@
 # Verification and phase ledger
 
-Current checkpoint: **Phase 4**, version **0.4.0 (4)**. Earlier phase sections below describe historical implementation states. See PHASE-4-VERIFICATION.md for current executed evidence and DEVICE-ACCEPTANCE.md for physical testing still required.
+Current checkpoint: **Phase 5 automated quality**, version **0.5.0 (5)**. Earlier phase sections below describe historical implementation states. See PHASE-5-VERIFICATION.md for current executed evidence and DEVICE-ACCEPTANCE.md for physical testing still required.
 
 ## Phase 0
 
@@ -46,3 +46,9 @@ Commit 122af9cb6928328124009cb225395712b683eeec passed the unsigned iOS Release 
 User-selected Prism is the primary icon. Actual source/decoder/mixer/session/route observations now feed the canonical Signal Path assessment and six evidence-labelled native cards, with a private bounded memory-only route/interruption history. Version 0.4.0/build 4 on commit c4737944a0d5a69f926900786fe905f03f183a0f passed the unsigned Release build and **41** core/app/UI tests. Its actual arm64 IPA was downloaded and hash-checked; the compiled Prism icon was inspected. Run: https://github.com/Cloud9null/Soundly/actions/runs/43289267087 .
 
 The separate optional simulator Home capture timed out; no running-screen visual QA is claimed. Packaging precedes that bounded step, and IPA/test evidence upload succeeded. See PHASE-4-VERIFICATION.md for precise hashes and limits. Physical installation/playback/routes, background lifecycle, full rate matrix, performance/accessibility and external bit comparison remain unverified. Gapless and lock-screen artwork remain pending; the wider MVP is not declared complete. No runtime output is bit-verified.
+
+## Phase 5 verified automated quality checkpoint
+
+Commit 4c10720b3e6be9bda55048efd4703f458e1868ee passed Xcode 26.3 unsigned Release and **65 unique tests**: 19 core, 28 app, 3 UI and 15 Python. Run: https://github.com/Cloud9null/Soundly/actions/runs/43374763875 . The two new matrix methods cover 24 WAV/AIFF integer PCM16/24 cases through 192 kHz with zero numerical mismatches, separate from the existing FLAC/ALAC fixtures. Synthetic 100/1,000/10,000-row metadata queries passed; no real-library benchmark is claimed.
+
+Six actual UI test screenshots and both matrix records exported and were downloaded. Native review found and corrected empty/search copy and a missing Source icon; final corrected views were inspected. A scoped Home element-description audit and mini-player target/value check passed. The arm64 0.5.0/build 5 IPA was downloaded, archive-digest checked and inspected; see PHASE-5-VERIFICATION.md for exact hashes, scope and remaining physical/quality work. PCM-CAPTURE-TOOLS.md documents executable local reference/negative-control/capture comparison tools, which cannot authenticate hardware or grant bit verification. The broader MVP and physical distribution acceptance remain incomplete.

@@ -16,6 +16,8 @@ Phase 3 adds native file/PCM playback, seek, queue, repeat/shuffle, remote contr
 
 Phase 4 connects the canonical Signal Path policy to actual source, decoder, mixer, active-session and route observations. Six native evidence-labelled stages distinguish parsed metadata, reported configuration, inference and unknown physical measurements. Integer/float conversion is disclosed; matching sample rates never grant bit verification. A bounded memory-only route/interruption history contains no track titles or file paths. See [Signal Path implementation](Documentation/PHASE-4-SIGNAL-PATH.md).
 
+Phase 5 adds [quality checks](Documentation/PHASE-5-QUALITY.md) for exact offline WAV/AIFF PCM matrices, audio path/parser boundaries, synthetic metadata stores up to 10,000 rows, scoped accessibility and native screenshot evidence. The independent [PCM reference/comparison tool](Documentation/PCM-CAPTURE-TOOLS.md) uses decoded PCM hashes and deliberate negative controls; even matching windows do not authenticate a physical capture. Real-library performance and device/DAC validation require separate evidence.
+
 See [verification ledger](Documentation/STATUS.md), [architecture](Documentation/ARCHITECTURE.md), [audio validation](Documentation/AUDIO-VERIFICATION.md) and [build instructions](Documentation/BUILDING.md). Always inspect the iOS workflow, not only the core-package check.
 
 ## Build
@@ -35,3 +37,7 @@ The iOS Release build and all 38 core/app/UI tests passed on application commit 
 ## Verified Phase 4 checkpoint
 
 Commit `c4737944a0d5a69f926900786fe905f03f183a0f` passed the unsigned iOS Release build and all **41 core/app/UI tests**. Version **0.4.0 (4)** was packaged as an arm64 device IPA, downloaded, hash-checked and inspected, including its compiled Prism icon. See [Phase 4 verification](Documentation/PHASE-4-VERIFICATION.md) for exact evidence and limitations. The optional Home capture timed out; no running-screen visual QA is claimed. Signing/physical installation, DAC behavior, gapless and external sample identity remain unverified or pending. Use the [device acceptance checklist](Documentation/DEVICE-ACCEPTANCE.md) for testing on real equipment.
+
+## Verified Phase 5 automated quality checkpoint
+
+Application commit `4c10720b3e6be9bda55048efd4703f458e1868ee` passed the unsigned iOS Release build and **65 unique tests**, including a 24-case WAV/AIFF PCM matrix, synthetic metadata query scale checks, scoped accessibility and actual native screenshots. Version **0.5.0 (5)** retains Prism and twelve themes; its device IPA was downloaded, hash-checked and inspected. See [Phase 5 verification](Documentation/PHASE-5-VERIFICATION.md) for all evidence and limits. Physical installation/playback/DAC behavior, wider accessibility/performance, gapless and external sample identity remain unverified or pending. The full MVP is not declared complete solely from automated tests.

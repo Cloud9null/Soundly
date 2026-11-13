@@ -16,6 +16,7 @@ xcodebuild -version
 python3 Scripts/generate_project.py
 git diff --exit-code -- Soundly.xcodeproj
 swift test
+python3 -m unittest discover -s Scripts/tests -v
 xcodebuild -project Soundly.xcodeproj -scheme Soundly -configuration Release -destination 'generic/platform=iOS' -derivedDataPath build/device CODE_SIGNING_ALLOWED=NO build
 xcrun simctl list devices available
 ```
@@ -28,7 +29,7 @@ xcodebuild -project Soundly.xcodeproj -scheme Soundly -configuration Debug -dest
 
 The project generator is deterministic and uses the Python standard library. It includes the canonical `Sources/SoundlyCore` files in the app target; `swift test` separately tests that same domain policy. The first native build phase exports the approved Prism master to the app icon using Apple's `sips`. No image service or network operation is involved.
 
-`.github/workflows/ios.yml` uses the macOS 15 runner and Xcode 26.3. It builds unsigned arm64 Release, runs core plus simulator integration/UI tests, then packages the device IPA only after successful builds/tests. An optional native Home screenshot follows packaging with a two-minute limit. Test evidence and IPA are uploaded as `soundly-ios` with three-day retention. A core-only green check does not establish an iOS build result. Consult the exact verification report/run for the source commit you intend to install; artifact links may expire.
+`.github/workflows/ios.yml` uses the macOS 15 runner and Xcode 26.3. It builds unsigned arm64 Release, runs core, Python PCM negative controls and simulator integration/UI tests, then packages the device IPA only after successful builds/tests. Actual UI screenshots and PCM matrix records are retained as XCTest attachments and exported with xcresulttool under a two-minute limit; no separate simulator boot/install is needed. Test evidence, reference WAVs/PCM manifest and IPA are uploaded as `soundly-ios` with three-day retention. A core-only green check does not establish an iOS build result. Consult the exact verification report/run for the source commit you intend to install; artifact links may expire.
 
 ## Unsigned device IPA
 
@@ -54,3 +55,5 @@ This packages an actual device application for later signing; it is not an Apple
 Unsigned-artifact signing acceptance, physical installation and device playback still require an actual test on your equipment. No TestFlight/App Store release or verified bit-perfect result is implied. Do not tag a usable release until the relevant MVP acceptance evidence exists.
 
 Use [DEVICE-ACCEPTANCE.md](DEVICE-ACCEPTANCE.md) for the concrete installation/import/playback/route checklist and record physical results separately from CI evidence.
+
+Use [PCM-CAPTURE-TOOLS.md](PCM-CAPTURE-TOOLS.md) for offline reference generation/comparison. The Python tools are test infrastructure, not application dependencies, and cannot authenticate a physical digital capture.

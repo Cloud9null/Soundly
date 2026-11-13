@@ -4,6 +4,8 @@ Automated evidence now includes domain policy, actual offline production-graph r
 
 ## Automated fixtures, Phase 3–5
 
+Executable offline reference/comparison infrastructure is now in Scripts/audio_reference.py. See PCM-CAPTURE-TOOLS.md for commands and PHASE-5-QUALITY.md for matrix, negative-control and scope details. Consult PHASE-5-VERIFICATION.md only for results actually executed on its explicit commit; implementation alone is not evidence of device support.
+
 Generate deterministic original integer PCM (16/24-bit; 44.1/48/88.2/96/176.4/192 kHz) with impulses on separate channels, silence, low-level bit patterns, signed boundaries, a sweep and a clipping-adjacent sequence. Generate WAV/AIFF and encode FLAC/ALAC losslessly with recorded encoder versions. Keep generator seed, frame count and canonical interleaved signed little-endian decoded-PCM SHA-256. Distinguish storage width/sign extension from valid bit depth. Never compare compressed file hashes to device output.
 
 Decode each fixture and compare the canonical PCM before playback; record processing format and any conversion. Seek at deterministic frame positions, cancel/import malformed files, and exercise interrupted decode. Test corrupt/truncated files without registering playable library entries. Format/rate claims are per fixture and route, not extension-based blanket support.
