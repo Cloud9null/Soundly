@@ -39,7 +39,7 @@ struct RootView: View {
                             Text(selected?.artist ?? "No track selected").font(.caption).foregroundStyle(.secondary).lineLimit(1)
                         }
                         Spacer()
-                    }.contentShape(Rectangle())
+                    }.frame(minHeight:44).contentShape(Rectangle())
                 }.buttonStyle(.plain).accessibilityIdentifier("miniPlayerOpen").accessibilityLabel(selected == nil ? "Open Now Playing. No track selected" : "Open Now Playing")
                 if selected != nil {
                     Button(playback.audio.playing ? "Pause" : "Play",systemImage:playback.audio.playing ? "pause.fill" : "play.fill") { playback.toggle() }
@@ -277,7 +277,7 @@ struct SettingsView: View {
                 Text("Music stays on this device. No external artwork or metadata lookups. Imported music is excluded from device backups; keep your original files.").font(.footnote)
             }
             Section("About") {
-                LabeledContent("Version",value:"0.4.0 (4)")
+                LabeledContent("Version",value:"0.5.0 (5)")
                 Text("Built with Apple frameworks. No third-party runtime code.")
             }
         }.soundlySurface().navigationTitle("Settings")

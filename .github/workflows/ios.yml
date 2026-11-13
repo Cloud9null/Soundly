@@ -25,6 +25,10 @@ jobs:
           git diff --exit-code -- Soundly.xcodeproj
       - name: Domain tests
         run: swift test
+      - name: PCM comparison negative controls and reference fixtures
+        run: |
+          python3 -m unittest discover -s Scripts/tests -v
+          python3 Scripts/audio_reference.py generate build/reference-pcm
       - name: Device build (unsigned)
         run: xcodebuild -project Soundly.xcodeproj -scheme Soundly -configuration Release -destination 'generic/platform=iOS' -derivedDataPath build/device CODE_SIGNING_ALLOWED=NO build
       - name: Select available iOS 26 simulator
@@ -44,18 +48,14 @@ jobs:
           cp -R build/device/Build/Products/Release-iphoneos/Soundly.app build/ipa/Payload/
           cd build/ipa
           zip -qr ../Soundly-unsigned.ipa Payload
-      - name: Capture native Home for visual review
+      - name: Export native screenshots and matrix evidence from actual tests
         if: always() && !cancelled()
         continue-on-error: true
         timeout-minutes: 2
         run: |
-          if [ -n "${SIMULATOR_ID:-}" ]; then
-            xcrun simctl boot "$SIMULATOR_ID" || true
-            xcrun simctl bootstatus "$SIMULATOR_ID" -b
-            xcrun simctl install "$SIMULATOR_ID" build/simulator/Build/Products/Debug-iphonesimulator/Soundly.app
-            xcrun simctl launch --terminate-running-process "$SIMULATOR_ID" app.soundly.player
-            sleep 2
-            xcrun simctl io "$SIMULATOR_ID" screenshot build/Home.png
+          if [ -d build/Tests.xcresult ]; then
+            xcrun xcresulttool help export attachments
+            xcrun xcresulttool export attachments --path build/Tests.xcresult --output-path build/Attachments
           fi
       - name: Upload unsigned app and test evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -66,5 +66,6 @@ jobs:
           path: |
             build/Soundly-unsigned.ipa
             build/Tests.xcresult
-            build/Home.png
+            build/Attachments
+            build/reference-pcm
           retention-days: 3

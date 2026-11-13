@@ -36,3 +36,12 @@ An iOS app target, importer, player and IPA are pending later phases.
 - Added six-stage evidence-labelled Signal Path UI and memory-only route/interruption events.
 - Added invalidation coverage for inactive, interrupted, stopped and ambiguous-output states.
 - Preserved no-bit-verification policy; physical DAC properties remain unknown.
+
+## Unreleased — Phase 5
+
+- Added bounded offline integer PCM reference generation/comparison with decoded PCM hashes, whole-frame alignment, channel/volume/rail/mismatch reports and no physical-verification inference.
+- Added negative controls for single-bit changes, channels, gain, clipping, resampling, dropped frames, invalid containers and ambiguous alignment.
+- Added handwritten WAV/AIFF PCM16/24 offline production-graph matrix tests at six rates, library metadata scale tests and audio path/parser boundary tests.
+- Added native test screenshots and an accessibility label/touch-target check; expanded mini-player navigation to a minimum 44-point target.
+- Replaced the separate simulator capture with bounded export of actual XCTest attachments.
+- Version 0.5.0/build 5. Execution and physical limitations must be recorded in the verification report; authored tests alone do not prove passing results.
