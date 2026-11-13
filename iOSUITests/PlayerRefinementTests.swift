@@ -6,9 +6,11 @@ import XCTest
         app.launchArguments = ["--soundly-fixtures"] + (large ? ["--soundly-large-type"] : [])
         app.launch()
         XCTAssertTrue(app.navigationBars["Listen"].waitForExistence(timeout:30))
+        capture(app,large ? "Home — enlarged text" : "Home — native bottom accessory")
         app.tabBars.buttons["Library"].tap()
         XCTAssertTrue(app.staticTexts["libraryTrackCount"].waitForExistence(timeout:10))
         XCTAssertEqual(app.staticTexts["libraryTrackCount"].label,"3 songs")
+        capture(app,large ? "Songs — enlarged text" : "Songs — numbered library")
         app.staticTexts["Reference 1"].firstMatch.tap()
         XCTAssertTrue(app.buttons["audioQualityButton"].waitForExistence(timeout:10))
         let toggle = app.buttons["transportToggle"]

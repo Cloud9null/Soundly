@@ -77,7 +77,7 @@ struct NowPlayingView: View {
     }
     private var header:some View {
         HStack {
-            Button { dismiss() } label: { Image(systemName:"chevron.down").font(.title3.weight(.semibold)).frame(width:44,height:44).contentShape(Rectangle()) }
+            Button { dismiss() } label: { Image(systemName:"chevron.down").font(.title3.weight(.semibold)).frame(width:44,height:44).contentShape(Rectangle()).glassEffect(in:.circle) }
                 .buttonStyle(.plain).foregroundStyle(.secondary).accessibilityLabel("Done").accessibilityIdentifier("nowPlayingDone")
             Spacer()
             VStack(spacing:2) {
@@ -106,7 +106,7 @@ struct NowPlayingView: View {
                     Text(playback.current?.sourceQuality ?? "Audio quality").lineLimit(1).minimumScaleFactor(0.8)
                     Image(systemName:"chevron.down").font(.system(size:9,weight:.semibold))
                 }.font(.caption.weight(.medium)).padding(.vertical,7).padding(.horizontal,10)
-                    .background(.primary.opacity(0.06),in:Capsule())
+                    .glassEffect(in:.capsule)
             }.buttonStyle(.plain).foregroundStyle(.secondary).accessibilityLabel("Audio quality and signal path")
                 .accessibilityValue(playback.current?.sourceQuality ?? "No source selected")
                 .accessibilityIdentifier("audioQualityButton")
@@ -153,7 +153,8 @@ struct NowPlayingView: View {
                     .disabled(playback.current == nil)
             } label: { Image(systemName:"ellipsis").font(.title3).frame(width:44,height:44) }
                 .accessibilityLabel("More playback options").accessibilityIdentifier("playbackMenu")
-        }.padding(.horizontal,28).padding(.vertical,8).foregroundStyle(.primary)
+        }.padding(.horizontal,12).padding(.vertical,8).foregroundStyle(.primary)
+            .glassEffect(in:.capsule).padding(.horizontal,20).padding(.bottom,8)
     }
     private func iconButton(_ title:String,symbol:String,id:String,active:Bool = false,action:@escaping()->Void)->some View {
         Button(action:action) {
@@ -188,7 +189,7 @@ struct ArtworkFullscreen:View {
                 Color.black
                 CoverView(artwork:artwork,size:min(geometry.size.width,geometry.size.height),cornerRadius:0)
                     .frame(maxWidth:.infinity,maxHeight:.infinity)
-                VStack { HStack { Spacer(); Button { dismiss() } label: { Image(systemName:"xmark").frame(width:44,height:44).contentShape(Rectangle()).glassEffect() }.accessibilityLabel("Close artwork").accessibilityIdentifier("closeArtwork") }; Spacer() }.padding(20)
+                VStack { HStack { Spacer(); Button { dismiss() } label: { Image(systemName:"xmark").frame(width:44,height:44).contentShape(Rectangle()).glassEffect() }.buttonStyle(.plain).foregroundStyle(.white).accessibilityLabel("Close artwork").accessibilityIdentifier("closeArtwork") }; Spacer() }.padding(20)
             }
         }.background(.black).preferredColorScheme(.dark)
     }

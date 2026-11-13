@@ -12,10 +12,11 @@ struct RootView: View {
     private var appearance: SoundlyTheme { SoundlyTheme(rawValue: theme) ?? .system }
     var body: some View {
         TabView {
-            Tab("Home", systemImage: "house") { NavigationStack { HomeView(select: select) }.safeAreaInset(edge:.bottom) { miniPlayer } }
-            Tab("Library", systemImage: "square.stack") { NavigationStack { LibraryView(select: select) }.safeAreaInset(edge:.bottom) { miniPlayer } }
-            Tab("Settings", systemImage: "slider.horizontal.3") { NavigationStack { SettingsView() }.safeAreaInset(edge:.bottom) { miniPlayer } }
+            Tab("Home", systemImage: "house") { NavigationStack { HomeView(select: select) } }
+            Tab("Library", systemImage: "square.stack") { NavigationStack { LibraryView(select: select) } }
+            Tab("Settings", systemImage: "slider.horizontal.3") { NavigationStack { SettingsView() } }
         }
+        .tabViewBottomAccessory { miniPlayer }
         .environment(importer)
         .environment(playback)
         .environment(\.soundlySurface,appearance.surface)
@@ -46,12 +47,12 @@ struct RootView: View {
                 }.buttonStyle(.plain).accessibilityIdentifier("miniPlayerOpen").accessibilityLabel("Open Now Playing")
                     .accessibilityValue(selected.map { "\($0.title), \($0.artist)" } ?? "No track selected")
                 if selected != nil {
-                    Button(playback.audio.playing ? "Pause" : "Play",systemImage:playback.audio.playing ? "pause.fill" : "play.fill") { playback.toggle() }
-                        .labelStyle(.iconOnly).frame(minWidth:44,minHeight:44)
-                    Button("Next",systemImage:"forward.end.fill") { playback.next() }
-                        .labelStyle(.iconOnly).frame(width:44,height:44)
+                    Button { playback.toggle() } label: { Image(systemName:playback.audio.playing ? "pause.fill" : "play.fill").frame(width:44,height:44).contentShape(Rectangle()) }
+                        .accessibilityLabel(playback.audio.playing ? "Pause" : "Play")
+                    Button { playback.next() } label: { Image(systemName:"forward.end.fill").frame(width:44,height:44).contentShape(Rectangle()) }
+                        .accessibilityLabel("Next")
                 }
-            }.buttonStyle(.plain).foregroundStyle(.primary).padding(10).glassEffect(in:.rect(cornerRadius:18)).padding(.horizontal,12).padding(.bottom,6)
+            }.buttonStyle(.plain).foregroundStyle(.primary).padding(.horizontal,14).padding(.vertical,8)
     }
     private func select(_ song: Song) { playback.play(song,within:songs); nowPlaying = true }
 }
@@ -67,8 +68,7 @@ struct HomeView: View {
                     Text("A space for\nyour sound.").font(.largeTitle.bold())
                     Text("Your music. Your files. Your sound.").foregroundStyle(.secondary)
                     AddMusicButton()
-                }.frame(maxWidth:.infinity,alignment:.leading).padding(24)
-                    .background(.tint.opacity(0.08),in:RoundedRectangle(cornerRadius:28))
+                }.frame(maxWidth:.infinity,alignment:.leading).padding(.vertical,12)
                 if songs.isEmpty {
                     ContentUnavailableView("Make yourself at home",systemImage:"opticaldisc",description:Text("Import files or a folder to build your offline library."))
                 } else {

@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   core-tests:
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 15
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
