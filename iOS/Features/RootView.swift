@@ -283,7 +283,10 @@ struct SettingsView: View {
                 ImportStatusView()
             }
             Section("Audio") {
-                NavigationLink("Signal Path",destination:SignalPathView()).accessibilityIdentifier("settingsSignalPath")
+                NavigationLink { SignalPathView() } label: {
+                    Label("Signal Path",systemImage:"waveform.path")
+                        .frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle())
+                }.accessibilityIdentifier("settingsSignalPath")
                 Text("Native-rate request · Unity application gain · No EQ, ReplayGain or crossfade").font(.footnote)
                 Text("Gapless transitions are not yet implemented. Output is Not Bit-Verified.").font(.footnote)
             }

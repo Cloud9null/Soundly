@@ -25,9 +25,17 @@ final class NavigationTests: XCTestCase {
             if signalPath.isHittable { break }
             app.collectionViews.firstMatch.swipeUp()
         }
-        XCTAssertTrue(signalPath.isHittable)
+        // A native Form can remain in deceleration after swipeUp reports idle.
+        // Wait for a visible, stationary row before sending the navigation tap.
+        var previousFrame:CGRect?
+        let stationary = NSPredicate { _,_ in
+            let frame = signalPath.frame
+            defer { previousFrame = frame }
+            return signalPath.isHittable && previousFrame == frame
+        }
+        XCTAssertEqual(XCTWaiter.wait(for:[XCTNSPredicateExpectation(predicate:stationary,object:signalPath)],timeout:8),.completed)
         signalPath.tap()
-        XCTAssertTrue(app.navigationBars["Signal Path"].waitForExistence(timeout:5))
+        XCTAssertTrue(app.navigationBars["Signal Path"].waitForExistence(timeout:10))
         XCTAssertTrue(app.descendants(matching:.any)["signalPathStatus"].exists)
         capture(app,"Signal Path — inactive session")
     }
