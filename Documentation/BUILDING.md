@@ -1,44 +1,56 @@
 # Build and distribution
 
-## Phase 0
+## Requirements
 
-Requires Swift 6+ for the package. On macOS with Xcode 26.3:
+- macOS with Xcode 26.3, including an iOS 26 simulator runtime.
+- Swift 6; minimum device OS: iOS 26.0. Linux cannot build the iOS application.
+- No third-party runtime packages, account, application server or signing secrets are required to build unsigned.
+
+Open `Soundly.xcodeproj`, select the shared **Soundly** scheme and your destination. The bundle identifier defaults to `app.soundly.player`; override `PRODUCT_BUNDLE_IDENTIFIER` for your own signing configuration. Select your own development team for a signed device build. Never commit certificates, provisioning profiles, Apple account credentials or signing keys.
+
+## Reproduce CI
 
 ```sh
 export DEVELOPER_DIR=/Applications/Xcode_26.3.app/Contents/Developer
 xcodebuild -version
-swift --version
-swift package resolve
+python3 Scripts/generate_project.py
+git diff --exit-code -- Soundly.xcodeproj
 swift test
+xcodebuild -project Soundly.xcodeproj -scheme Soundly -configuration Release -destination 'generic/platform=iOS' -derivedDataPath build/device CODE_SIGNING_ALLOWED=NO build
+xcrun simctl list devices available
 ```
 
-The checked-in Actions workflow runs these steps with read-only repository permissions and uploads test logs. It does not build an iOS app yet. On the current Linux execution host, no Swift compiler is installed; no local Swift test result is claimed.
-
-GitHub's account artifact storage quota was reported exhausted during the initial run. Console logs remain the authoritative evidence; a separate log ZIP is best-effort and does not hide failed tests. A future IPA upload requires available artifact storage or another authorized delivery path. No account artifacts are deleted automatically.
-
-## Phase 1 target
-
-Check in a reproducible `Soundly.xcodeproj`, shared scheme, native SwiftUI app target, configurable `PRODUCT_BUNDLE_IDENTIFIER` (initially `app.soundly.player`), iOS 26.0 minimum, Swift 6, privacy manifest, asset catalog and app icon, Info.plist with background audio mode, and no microphone/photo-library permission. No signing team, certificate, profile or Apple ID is committed. CI must first build for simulator and generic iOS device with signing disabled, and run the app's actual tests when targets exist.
-
-## Later device artifact
-
-After a successful generic iOS **device** Release build with `CODE_SIGNING_ALLOWED=NO`, package the built `Soundly.app` under `Payload/Soundly.app` in a ZIP named `Soundly-unsigned.ipa`. Confirm executable is arm64 and bundle contains required resources. This is packaging an unsigned device application, not an Apple-signed export and not proof of installation. Simulator binaries cannot be substituted. Do not rename an empty directory or source ZIP as IPA.
-
-For a signed distribution export, Xcode requires a valid signing identity and appropriate provisioning/export configuration. Keep all signing assets outside Git.
-
-[Sideloadly](https://sideloadly.io/) accepts IPA files and signs/installs using the user's Apple account on their computer. The owner performs account sign-in there; credentials are never supplied to Soundly, GitHub, or this repository. Use the official tool, pair/trust the iPhone, load the generated device IPA, choose the device/account, and follow Apple's device developer/trust prompts where required. Actual unsigned-artifact acceptance and installation still need a device test. Free-account signing generally expires after seven days according to Sideloadly; signing/refresh is separate from offline playback.
-
-No IPA exists in Phase 0. No App Store/TestFlight release or paid account is required for current development. Do not tag a usable release before the MVP acceptance evidence exists.
-
-## Phase 1–2 project now implemented
-
-Open `Soundly.xcodeproj`; scheme `Soundly`. Xcode 26.3 and iOS 26+ are selected. The project generator has no external dependencies:
+Choose an installed iOS 26 iPhone simulator UUID, then run:
 
 ```sh
-python3 Scripts/generate_project.py
-xcodebuild -project Soundly.xcodeproj -scheme Soundly -configuration Release -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build
+xcodebuild -project Soundly.xcodeproj -scheme Soundly -configuration Debug -destination 'platform=iOS Simulator,id=REPLACE_WITH_UUID' -derivedDataPath build/simulator -resultBundlePath build/Tests.xcresult CODE_SIGNING_ALLOWED=NO test
 ```
 
-`ios.yml` now builds the device app and runs simulator integration/UI tests before packaging `Payload/Soundly.app` as `Soundly-unsigned.ipa`. The artifact (if upload succeeds) is named `soundly-ios` and retained three days. Do not confuse this with completed playback or a signed install. The iOS tests generate synthetic WAV music locally; no copyrighted songs are included.
+The project generator is deterministic and uses the Python standard library. It includes the canonical `Sources/SoundlyCore` files in the app target; `swift test` separately tests that same domain policy. The first native build phase exports the approved Prism master to the app icon using Apple's `sips`. No image service or network operation is involved.
 
-Earlier Phase 0 instructions above describe the historical bootstrap state. Current implementation/verification is in STATUS.md and PR #1.
+`.github/workflows/ios.yml` uses the macOS 15 runner and Xcode 26.3. It builds unsigned arm64 Release, runs core plus simulator integration/UI tests, then packages the device IPA only after successful builds/tests. An optional native Home screenshot follows packaging with a two-minute limit. Test evidence and IPA are uploaded as `soundly-ios` with three-day retention. A core-only green check does not establish an iOS build result. Consult the exact verification report/run for the source commit you intend to install; artifact links may expire.
+
+## Unsigned device IPA
+
+After the Release device build and tests succeed:
+
+```sh
+mkdir -p build/ipa/Payload
+cp -R build/device/Build/Products/Release-iphoneos/Soundly.app build/ipa/Payload/
+cd build/ipa
+zip -qr ../Soundly-unsigned.ipa Payload
+```
+
+This packages an actual device application for later signing; it is not an Apple-signed export or proof of installation. A simulator binary cannot be substituted. A normal signed Xcode archive/export requires a valid signing identity and appropriate provisioning/export configuration; keep those assets outside Git.
+
+## Install using Sideloadly
+
+1. Obtain the official desktop tool from https://sideloadly.io/ on your Windows PC or Mac.
+2. Connect your own iPhone and accept its computer trust/pairing prompts.
+3. Load the device IPA, select the phone and use your Apple account inside Sideloadly. Do not supply credentials to Soundly, GitHub, this repository or this chat.
+4. Follow the tool's current signing/install instructions and the iPhone's developer/trust prompts if required. The selected signing account determines provisioning and refresh requirements; signing is separate from offline playback.
+5. For an update, use the same signing account and resulting bundle identifier. Keep your original music files and avoid deleting the existing app, because deleting it removes its private library. Imported copies/database are excluded from device backup.
+
+Unsigned-artifact signing acceptance, physical installation and device playback still require an actual test on your equipment. No TestFlight/App Store release or verified bit-perfect result is implied. Do not tag a usable release until the relevant MVP acceptance evidence exists.
+
+Use [DEVICE-ACCEPTANCE.md](DEVICE-ACCEPTANCE.md) for the concrete installation/import/playback/route checklist and record physical results separately from CI evidence.

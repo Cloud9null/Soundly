@@ -1,5 +1,7 @@
 # Verification and phase ledger
 
+Current checkpoint: **Phase 4**, version **0.4.0 (4)**. Earlier phase sections below describe historical implementation states. See PHASE-4-VERIFICATION.md for current executed evidence and DEVICE-ACCEPTANCE.md for physical testing still required.
+
 ## Phase 0
 
 Core Swift 6 package compiled with Xcode 26.3 / Swift 6.2.4; all 19 domain tests passed. Evidence: https://github.com/Cloud9null/Soundly/actions/runs/43245316376 . No runtime bit verification exists.
@@ -38,3 +40,9 @@ Native AudioTransport actor, PlaybackController, queue/persistence, system contr
 ## Phase 3 verified checkpoint
 
 Commit 122af9cb6928328124009cb225395712b683eeec passed the unsigned iOS Release build and all **38** core/app/UI tests. An unsigned arm64 device IPA was actually generated, downloaded and inspected. See PHASE-3-VERIFICATION.md for exact run, test breakdown, hashes and limits. The optional screenshot failed due to a shutdown base simulator; it is not included or claimed as reviewed.
+
+## Phase 4 verified checkpoint
+
+User-selected Prism is the primary icon. Actual source/decoder/mixer/session/route observations now feed the canonical Signal Path assessment and six evidence-labelled native cards, with a private bounded memory-only route/interruption history. Version 0.4.0/build 4 on commit c4737944a0d5a69f926900786fe905f03f183a0f passed the unsigned Release build and **41** core/app/UI tests. Its actual arm64 IPA was downloaded and hash-checked; the compiled Prism icon was inspected. Run: https://github.com/Cloud9null/Soundly/actions/runs/43289267087 .
+
+The separate optional simulator Home capture timed out; no running-screen visual QA is claimed. Packaging precedes that bounded step, and IPA/test evidence upload succeeded. See PHASE-4-VERIFICATION.md for precise hashes and limits. Physical installation/playback/routes, background lifecycle, full rate matrix, performance/accessibility and external bit comparison remain unverified. Gapless and lock-screen artwork remain pending; the wider MVP is not declared complete. No runtime output is bit-verified.

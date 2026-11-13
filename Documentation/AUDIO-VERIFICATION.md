@@ -1,6 +1,6 @@
 # Audio validation plan
 
-Current evidence: domain-policy tests only, pending/subject to the Actions result. No decoder, playback, external loopback, DAC or iPhone measurements exist yet.
+Automated evidence now includes domain policy, actual offline production-graph rendering for WAV/ALAC and FLAC 16-bit/44.1 kHz and 24-bit/96 kHz, plus simulator transport/lifecycle assertions. See PHASE-3-VERIFICATION.md and the current phase report for exact source commits, test counts and CI results. These tests do not establish physical iPhone, external digital loopback, USB DAC, background or bit-perfect behavior. The wider matrix below remains a validation plan rather than a tested support claim.
 
 ## Automated fixtures, Phase 3–5
 
