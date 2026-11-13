@@ -23,6 +23,9 @@ struct RootView: View {
         .fullScreenCover(isPresented:$nowPlaying) {
             NowPlayingView().environment(playback).environment(\.soundlySurface,appearance.surface)
                 .modelContainer(context.container).preferredColorScheme(appearance.scheme)
+                #if DEBUG
+                .modifier(DebugPresentation())
+                #endif
         }
         .tint(appearance.accent).preferredColorScheme(appearance.scheme)
         .background(appearance.surface)

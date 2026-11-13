@@ -37,6 +37,7 @@ import XCTest
     }
     func testPlayerFooterAtAccessibilityTextSize() {
         let app = openPlayer(large:true)
+        XCTAssertGreaterThan(app.staticTexts["Reference 1"].firstMatch.frame.height,35,"Full-screen presentation must inherit the controlled accessibility text size")
         assertFooter(app)
         capture(app,"Player at accessibility2 text size")
     }
@@ -59,7 +60,7 @@ import XCTest
     }
     private func assertFooter(_ app:XCUIApplication) {
         let frame = app.frame
-        for id in ["shuffleButton","repeatButton","openQueue","playbackMenu"] {
+        for id in ["shuffleButton","repeatButton","openQueue","playbackMenu","nowPlayingDone","favoriteToggle","transportToggle"] {
             let button = app.buttons[id]
             XCTAssertTrue(button.exists); XCTAssertTrue(button.isHittable)
             XCTAssertGreaterThanOrEqual(button.frame.height,44); XCTAssertGreaterThanOrEqual(button.frame.width,44)

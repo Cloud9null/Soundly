@@ -18,8 +18,15 @@ final class NavigationTests: XCTestCase {
         app.buttons["miniPlayerOpen"].tap()
         XCTAssertTrue(app.staticTexts["Nothing playing"].waitForExistence(timeout: 3))
         capture(app,"Now Playing — empty library")
-        app.buttons["Done"].tap()
-        app.buttons["settingsSignalPath"].tap()
+        app.buttons["nowPlayingDone"].tap()
+        XCTAssertTrue(app.buttons["nowPlayingDone"].waitForNonExistence(timeout:5),"Dismiss must uncover Settings")
+        let signalPath = app.buttons["settingsSignalPath"]
+        for _ in 0..<3 {
+            if signalPath.isHittable { break }
+            app.collectionViews.firstMatch.swipeUp()
+        }
+        XCTAssertTrue(signalPath.isHittable)
+        signalPath.tap()
         XCTAssertTrue(app.navigationBars["Signal Path"].waitForExistence(timeout:5))
         XCTAssertTrue(app.descendants(matching:.any)["signalPathStatus"].exists)
         capture(app,"Signal Path — inactive session")

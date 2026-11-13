@@ -77,7 +77,7 @@ struct NowPlayingView: View {
     }
     private var header:some View {
         HStack {
-            Button { dismiss() } label: { Image(systemName:"chevron.down").font(.title3.weight(.semibold)).frame(width:44,height:44) }
+            Button { dismiss() } label: { Image(systemName:"chevron.down").font(.title3.weight(.semibold)).frame(width:44,height:44).contentShape(Rectangle()) }
                 .buttonStyle(.plain).foregroundStyle(.secondary).accessibilityLabel("Done").accessibilityIdentifier("nowPlayingDone")
             Spacer()
             VStack(spacing:2) {
@@ -126,14 +126,11 @@ struct NowPlayingView: View {
     private var transport:some View {
         HStack {
             Spacer()
-            Button("Previous",systemImage:"backward.end.fill") { playback.previous() }
-                .font(.system(size:28,weight:.medium)).frame(width:64,height:64)
+            Button { playback.previous() } label: { Image(systemName:"backward.end.fill").font(.system(size:28,weight:.medium)).frame(width:64,height:64).contentShape(Rectangle()) }.accessibilityLabel("Previous")
             Spacer()
-            Button(playback.audio.playing ? "Pause" : "Play",systemImage:playback.audio.playing ? "pause.fill" : "play.fill") { playback.toggle() }
-                .font(.system(size:42,weight:.medium)).frame(width:80,height:68).accessibilityIdentifier("transportToggle")
+            Button { playback.toggle() } label: { Image(systemName:playback.audio.playing ? "pause.fill" : "play.fill").font(.system(size:42,weight:.medium)).frame(width:80,height:68).contentShape(Rectangle()) }.accessibilityLabel(playback.audio.playing ? "Pause" : "Play").accessibilityIdentifier("transportToggle")
             Spacer()
-            Button("Next",systemImage:"forward.end.fill") { playback.next() }
-                .font(.system(size:28,weight:.medium)).frame(width:64,height:64)
+            Button { playback.next() } label: { Image(systemName:"forward.end.fill").font(.system(size:28,weight:.medium)).frame(width:64,height:64).contentShape(Rectangle()) }.accessibilityLabel("Next")
             Spacer()
         }.labelStyle(.iconOnly).buttonStyle(.plain).foregroundStyle(.primary)
             .disabled(playback.busy || playback.current == nil)
@@ -161,7 +158,7 @@ struct NowPlayingView: View {
     private func iconButton(_ title:String,symbol:String,id:String,active:Bool = false,action:@escaping()->Void)->some View {
         Button(action:action) {
             Image(systemName:symbol).font(.system(size:20,weight:.medium)).frame(width:44,height:44)
-                .background(active ? Color.accentColor.opacity(0.13) : .clear,in:RoundedRectangle(cornerRadius:12))
+                .background(active ? Color.accentColor.opacity(0.13) : .clear,in:RoundedRectangle(cornerRadius:12)).contentShape(Rectangle())
         }.buttonStyle(.plain).foregroundStyle(active ? Color.accentColor : Color.primary)
             .accessibilityLabel(title).accessibilityIdentifier(id)
     }
@@ -191,9 +188,9 @@ struct ArtworkFullscreen:View {
                 Color.black
                 CoverView(artwork:artwork,size:min(geometry.size.width,geometry.size.height),cornerRadius:0)
                     .frame(maxWidth:.infinity,maxHeight:.infinity)
-                VStack { HStack { Spacer(); Button { dismiss() } label: { Image(systemName:"xmark").frame(width:44,height:44).glassEffect() }.accessibilityLabel("Close artwork").accessibilityIdentifier("closeArtwork") }; Spacer() }.padding(20)
+                VStack { HStack { Spacer(); Button { dismiss() } label: { Image(systemName:"xmark").frame(width:44,height:44).contentShape(Rectangle()).glassEffect() }.accessibilityLabel("Close artwork").accessibilityIdentifier("closeArtwork") }; Spacer() }.padding(20)
             }
-        }.background(.black).preferredColorScheme(.dark).accessibilityIdentifier("fullScreenArtwork")
+        }.background(.black).preferredColorScheme(.dark)
     }
 }
 
