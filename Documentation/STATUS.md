@@ -1,6 +1,6 @@
 # Verification and phase ledger
 
-Current checkpoint: **Phase 5 automated quality**, version **0.5.0 (5)**. Earlier phase sections below describe historical implementation states. See PHASE-5-VERIFICATION.md for current executed evidence and DEVICE-ACCEPTANCE.md for physical testing still required.
+Current implementation: **Phase 6 device-feedback refinement**, version **0.6.0 (6)**, with final UI/build verification pending. The latest fully passing delivery remains **0.5.0 (5)**. Earlier sections below describe historical states. See PHASE-6-VERIFICATION.md for the current execution status and DEVICE-ACCEPTANCE.md for physical testing still required.
 
 ## Phase 0
 
@@ -28,7 +28,7 @@ The initial Phase 1 commit 9035c8b080c6ef97875897fd67355ac3e70685c4 passed the u
 
 The execution host is Linux without Swift/Xcode; actual iOS builds/tests run in GitHub macOS CI. A green macOS core-package check does not substitute for the iOS workflow. Refer to latest PR check logs for compiler/test results and retained evidence. Initial account artifact upload failed due to exhausted quota; changing visibility does not itself establish successful artifact delivery.
 
-No physical iPhone installation, DAC, audible playback, background playback, bit-perfect capture, format/rate matrix, or 100/1,000/10,000-track performance measurements have been performed. Linked external folders/bookmarks, comprehensive metadata edge cases, playlists/LRC, full listening-history Home sections and a dedicated duplicate manager remain later work. The importer shows aggregate counters and up to 20 per-file error details in the UI; it does not log filenames to CI.
+No physical iPhone installation, DAC, audible playback, background playback, bit-perfect capture, format/rate matrix, or 100/1,000/10,000-track performance measurements have been performed. Linked external folders/bookmarks, comprehensive metadata edge cases, playlists/LRC, full listening-history Home sections and advanced acoustic duplicate matching remain later work. The importer shows aggregate counters and up to 20 per-file error details in the UI; it does not log filenames to CI.
 
 Phase 3 implements the audio engine, queue, seek, interruption handling and system controls. Phase 4 binds actual observations to Signal Path UI. Phase 5 expands fixture/UI/accessibility/performance tests. Phase 6 verifies signing/installation and release readiness. An unsigned IPA from CI is an early app for signing/testing, not a completed music player or a verified installation.
 
@@ -52,3 +52,9 @@ The separate optional simulator Home capture timed out; no running-screen visual
 Commit 4c10720b3e6be9bda55048efd4703f458e1868ee passed Xcode 26.3 unsigned Release and **65 unique tests**: 19 core, 28 app, 3 UI and 15 Python. Run: https://github.com/Cloud9null/Soundly/actions/runs/43374763875 . The two new matrix methods cover 24 WAV/AIFF integer PCM16/24 cases through 192 kHz with zero numerical mismatches, separate from the existing FLAC/ALAC fixtures. Synthetic 100/1,000/10,000-row metadata queries passed; no real-library benchmark is claimed.
 
 Six actual UI test screenshots and both matrix records exported and were downloaded. Native review found and corrected empty/search copy and a missing Source icon; final corrected views were inspected. A scoped Home element-description audit and mini-player target/value check passed. The arm64 0.5.0/build 5 IPA was downloaded, archive-digest checked and inspected; see PHASE-5-VERIFICATION.md for exact hashes, scope and remaining physical/quality work. PCM-CAPTURE-TOOLS.md documents executable local reference/negative-control/capture comparison tools, which cannot authenticate hardware or grant bit verification. The broader MVP and physical distribution acceptance remain incomplete.
+
+## Phase 6 device-feedback checkpoint — final verification pending
+
+Source `bddd8a4408d43092325b44564552c1ad4a5a9235` adds a full-screen artwork-led native player, icon-only secondary controls with explicit touch regions, artwork-only mode, numbered Songs/Queue, an interactive quality report and compatible player-to-output graph without the application main mixer. Whole-library SHA-256 duplicate review/removal preserves one private copy, merges history/favorites and reconciles interrupted operations. Originals in Files are not deletion targets. QUICK-START.md explains the controls.
+
+The preceding run on `d1e364838848421b5522b6dc813dfdddf79bab35` built unsigned Release and passed 19 core + 15 Python + 40 app tests, including 48 exact-numeric offline PCM matrix cases and all seven duplicate tests. Its six UI methods included three failed methods; packaging was skipped. Actual native screenshots were reviewed, and touch-region, artwork identifier, text-size propagation and dismissal checks were corrected in source. The new run https://github.com/Cloud9null/Soundly/actions/runs/43465629555 remained queued awaiting its macOS runner at the time of this report. No successful final 0.6 build/test run or 0.6 IPA is claimed. See PHASE-6-VERIFICATION.md.

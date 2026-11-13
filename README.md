@@ -18,6 +18,8 @@ Phase 4 connects the canonical Signal Path policy to actual source, decoder, mix
 
 Phase 5 adds [quality checks](Documentation/PHASE-5-QUALITY.md) for exact offline WAV/AIFF PCM matrices, audio path/parser boundaries, synthetic metadata stores up to 10,000 rows, scoped accessibility and native screenshot evidence. The independent [PCM reference/comparison tool](Documentation/PCM-CAPTURE-TOOLS.md) uses decoded PCM hashes and deliberate negative controls; even matching windows do not authenticate a physical capture. Real-library performance and device/DAC validation require separate evidence.
 
+Phase 6 responds to installed-device feedback with a full-screen artwork-led player, icon-only secondary controls, system volume/output controls, numbered Songs/Queue, a tappable live quality sheet and reviewed whole-library byte-identical duplicate cleanup. Compatible observed output formats use a direct player-to-output graph without the application main mixer; fallback/conversions remain disclosed. This is not exclusive hardware access or a physical bit-perfect claim. See [refinement details](Documentation/PHASE-6-REFINEMENT.md).
+
 See [verification ledger](Documentation/STATUS.md), [architecture](Documentation/ARCHITECTURE.md), [audio validation](Documentation/AUDIO-VERIFICATION.md) and [build instructions](Documentation/BUILDING.md). Always inspect the iOS workflow, not only the core-package check.
 
 ## Build
@@ -41,3 +43,7 @@ Commit `c4737944a0d5a69f926900786fe905f03f183a0f` passed the unsigned iOS Releas
 ## Verified Phase 5 automated quality checkpoint
 
 Application commit `4c10720b3e6be9bda55048efd4703f458e1868ee` passed the unsigned iOS Release build and **65 unique tests**, including a 24-case WAV/AIFF PCM matrix, synthetic metadata query scale checks, scoped accessibility and actual native screenshots. Version **0.5.0 (5)** retains Prism and twelve themes; its device IPA was downloaded, hash-checked and inspected. See [Phase 5 verification](Documentation/PHASE-5-VERIFICATION.md) for all evidence and limits. Physical installation/playback/DAC behavior, wider accessibility/performance, gapless and external sample identity remain unverified or pending. The full MVP is not declared complete solely from automated tests.
+
+## Current 0.6 refinement status
+
+The [quick-start guide](Documentation/QUICK-START.md) covers the full-screen player, artwork/quality taps, numbered queue and duplicate review. The previous 0.6 attempt built Release and passed 74 non-UI tests, including 48 offline PCM cases, but three UI methods failed and IPA packaging was skipped. Fixes are committed; [the new iOS run](https://github.com/Cloud9null/Soundly/actions/runs/43465629555) is awaiting execution at this documentation checkpoint. See [current evidence](Documentation/PHASE-6-VERIFICATION.md). Version 0.5 remains the latest fully passing inspected IPA until final 0.6 verification succeeds.

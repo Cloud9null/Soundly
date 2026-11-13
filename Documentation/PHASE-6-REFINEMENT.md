@@ -1,0 +1,35 @@
+# Phase 6 — device-feedback refinement
+
+Version 0.6.0/build 6 responds to the owner's installed-app screenshots: the secondary playback labels wrapped, the prominent transport treatment felt inconsistent with native Music, artwork was constrained by a sheet header and the quality badge was not interactive. Screenshots establish installed UI observations, not an audible, background or DAC test result.
+
+## Native player
+
+Now Playing uses a full-screen presentation, adaptive large artwork, a compact dismiss/queue-position header, separate title/artist/album hierarchy, monochrome icon transport, a small favorite star and icon-only shuffle/repeat/output/queue/options controls. No control labels need to wrap. Stop is in the native options menu. The bottom controls remain reachable while content can scroll for enlarged text. Explicit rectangular content shapes make the full visual touch regions interactive, including transport, footer and dismiss controls; the full-screen cover receives the controlled DEBUG accessibility text size explicitly for UI coverage. Reduce Transparency suppresses ambient artwork; no artificial waveform or audio analysis is displayed.
+
+The artwork button opens an immersive full-width artwork presentation. A native MPVolumeView adjusts system volume; application gain remains unity. The source-quality disclosure opens a native sheet with the complete live chain rather than conflating file depth with physical output depth. Library Songs and Queue show ordinal numbers and totals; the player shows the actual queue position, not a fabricated album track number. The mini-player has compact play/next icons and genuine Liquid Glass; system tab navigation remains native.
+
+## Observed native-rate audio
+
+Before activation, the transport requests the parsed source rate (decoder rate only when source rate is unavailable), then reads actual session and enabled output format. A fresh engine graph connects AVAudioPlayerNode directly to the output when rate, channel count, Float32 representation and interleaving match the observed output. It does not access/instantiate the main mixer in that path. Incompatible formats retain an explicit Apple main-mixer fallback. A direct graph is revalidated when resuming; changes rebuild it as needed.
+
+Both paths use AVAudioFile's disclosed Float32 processing format. There is no EQ, ReplayGain, normalization, crossfade or changed application gain. Signal Path distinguishes **observed sample-rate equality** from integer/float conversion and bit identity. It exposes the requested rate, effective active-session rate and chosen graph. A known rate mismatch is shown explicitly; paused/restored/inactive observations remain conservative.
+
+This bypasses an application main mixer when compatible; it does **not** bypass iOS, establish exclusive DAC access or prove downstream sample identity. A USB route is reported only from AVAudioSession; the app does not invent supported DAC rates, chips or physical bit depth. The selected hardware and iOS determine the actual rate. External digital capture is still required. No runtime path can grant Verified Bit-Perfect.
+
+References: https://developer.apple.com/library/archive/qa/qa1631/_index.html ; https://developer.apple.com/documentation/avfaudio/avaudioengine/outputnode ; https://developer.apple.com/documentation/avfaudio/avaudioengine/mainmixernode ; https://developer.apple.com/documentation/avfaudio/avaudioplayernode .
+
+## Reviewed duplicate maintenance
+
+Settings → Library → Find duplicates scans actual private-file bytes with bounded 1 MiB SHA-256 reads on a background ModelActor, progress and cancellation. It scans registered tracks across the library, skips unavailable/unreadable/symlink files and does not rely on cached row hashes. This is **byte-identical file detection**, not title matching or acoustic fingerprinting: different encodings, tags, bit depths or masterings are preserved. Import already prevents many byte-identical duplicates; a clean library may correctly report zero.
+
+Groups can be reviewed before confirming removal. Removal re-hashes every candidate and the keeper before mutating anything; a changed or missing candidate aborts the operation. One record/copy per group is retained, preferring the currently selected track or otherwise the oldest. Favorite state, recorded play counts and latest play date are merged. Shared filenames are not removed while a retained row references them. Removed IDs are pruned from the playback queue without restarting a retained current track. Only Soundly's private copies are eligible; original Files/provider folders are never deletion targets.
+
+Private files are moved into a journalled recovery area before the database save. Failure rolls records back and restores recoverable moves. Startup and maintenance reconcile interrupted operations: restore moves whose records still exist and finish cleanup for committed deletions. Differing restored files are preserved instead of overwritten; new cleanup is blocked when recovery conflicts remain. Reclaimed bytes are reported only after staged-file cleanup succeeds. Recovery tests simulate process interruption, not arbitrary storage/power-loss durability or every external filesystem mutation.
+
+The journal remains local, protected and excluded from backup through the app's storage root. No scan result, file hash, filename or music is uploaded. The hash in duplicate detection concerns stored file identity; it is never used as proof of PCM output integrity.
+
+## Test and release boundaries
+
+Offline PCM matrices cover both direct and mixer graphs. Added checks exercise graph selection, representation/rate distinctions, queue pruning, actual duplicate hashing/removal, history merging, changed files, shared private paths, cancellation, symlinks/traversal and interrupted-operation recovery. Populated native UI tests use real generated quiet PCM24/44.1-kHz files and original test artwork in an isolated DEBUG-only store; code/data are absent from Release. Separate UI flows cover full-screen player/artwork, live quality sheet, queue, accessibility2 text size and reviewed duplicate removal.
+
+Implementation and authored tests are not a build result. Record the actual current CI commit/run, executed counts, screenshots and inspected IPA in PHASE-6-VERIFICATION.md after execution. Hardware DAC/native-rate behavior, audible quality, full accessibility/performance, gapless and broader listening features still need separate work/evidence. No overall release-complete claim is made solely from this refinement.
