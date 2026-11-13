@@ -73,6 +73,7 @@ import XCTest
             XCTAssertGreaterThanOrEqual(button.frame.minX,frame.minX); XCTAssertLessThanOrEqual(button.frame.maxX,frame.maxX)
             XCTAssertLessThanOrEqual(button.frame.maxY,frame.maxY)
         }
+        XCTAssertLessThanOrEqual(app.buttons["transportToggle"].frame.maxY,app.buttons["shuffleButton"].frame.minY-8,"Primary transport must remain above the glass footer")
     }
     private func capture(_ app:XCUIApplication,_ title:String) {
         let attachment = XCTAttachment(screenshot:app.screenshot()); attachment.name = title; attachment.lifetime = .keepAlways; add(attachment)

@@ -7,6 +7,7 @@ import MediaPlayer
 struct NowPlayingView: View {
     @Environment(PlaybackController.self) private var playback
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.dynamicTypeSize) private var textSize
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
@@ -39,7 +40,7 @@ struct NowPlayingView: View {
                     if let error = playback.error { Text(error).font(.footnote).foregroundStyle(.red).padding(.top,12) }
                 }.frame(maxWidth:520).padding(.horizontal,28).padding(.vertical,12)
                     .frame(maxWidth:.infinity,minHeight:geometry.size.height,alignment:.center)
-            }.scrollIndicators(.hidden)
+            }.scrollIndicators(.hidden).clipped()
         }
         .background { ambient }
         .safeAreaInset(edge:.top,spacing:0) { header }
@@ -62,7 +63,10 @@ struct NowPlayingView: View {
         .onChange(of:playback.audio.elapsed) { _, value in if !dragging { position = value } }
         .task(id:playback.current?.id) { position = playback.audio.elapsed; favorite = songModel()?.favorite ?? false }
     }
-    private func coverSize(_ size:CGSize)->CGFloat { max(120,min(min(size.width-56,max(120,size.height-330)),440)) }
+    private func coverSize(_ size:CGSize)->CGFloat {
+        if textSize.isAccessibilitySize { return min(180,max(100,size.width*0.45)) }
+        return max(120,min(min(size.width-56,max(120,size.height-330)),440))
+    }
     private var ambient:some View {
         GeometryReader { geometry in
             ZStack {

@@ -67,7 +67,7 @@ struct HomeView: View {
                     Text("SOUNDLY").font(.caption.weight(.bold)).tracking(4).foregroundStyle(.tint)
                     Text("A space for\nyour sound.").font(.largeTitle.bold())
                     Text("Your music. Your files. Your sound.").foregroundStyle(.secondary)
-                    AddMusicButton()
+                    AddMusicButton().buttonStyle(.glass).controlSize(.large)
                 }.frame(maxWidth:.infinity,alignment:.leading).padding(.vertical,12)
                 if songs.isEmpty {
                     ContentUnavailableView("Make yourself at home",systemImage:"opticaldisc",description:Text("Import files or a folder to build your offline library."))
@@ -148,7 +148,7 @@ struct SongResults: View {
     }
     var body: some View {
         List {
-            if !songs.isEmpty { Text("\(songs.count) songs").font(.caption.weight(.medium)).foregroundStyle(.secondary).accessibilityIdentifier("libraryTrackCount") }
+            if !songs.isEmpty { Text("\(songs.count) songs").font(.caption.weight(.medium)).foregroundStyle(.secondary).accessibilityIdentifier("libraryTrackCount").listRowBackground(Color.clear).listRowSeparator(.hidden) }
             if songs.isEmpty {
                 if !search.isEmpty { ContentUnavailableView.search(text:search) }
                 else if favorites { ContentUnavailableView("No favorite songs",systemImage:"heart",description:Text("Favorite songs in your library to find them here.")) }
@@ -166,7 +166,7 @@ struct SongResults: View {
                     default: song.originalFolder }
                 }
                 ForEach(groups.keys.sorted(),id:\.self) { group in
-                    DisclosureGroup(group) { ForEach(groups[group] ?? []) { row($0) } }
+                    DisclosureGroup(group) { ForEach(groups[group] ?? []) { row($0) } }.listRowBackground(Color.clear)
                 }
             }
         }.listStyle(.plain).soundlySurface()
@@ -184,7 +184,7 @@ struct SongResults: View {
                 }
                 Spacer(); if song.favorite { Image(systemName:"heart.fill").foregroundStyle(.tint) }
             }.padding(.vertical,4)
-        }.buttonStyle(.plain)
+        }.buttonStyle(.plain).listRowBackground(Color.clear)
         .swipeActions { Button(song.favorite ? "Unfavorite" : "Favorite",systemImage:"heart") {
             song.favorite.toggle()
             do { try context.save() } catch { context.rollback(); saveError = true }
