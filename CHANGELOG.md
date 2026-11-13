@@ -49,9 +49,11 @@ An iOS app target, importer, player and IPA are pending later phases.
 
 ## Unreleased — Phase 6 refinement
 
+- Refined the native iOS tab-bar accessory mini-player, glass secondary-control capsule/quality badge/dismiss control, quieter Home hierarchy and monochrome artwork close control.
+
 - Rebuilt Now Playing as an artwork-led full-screen native player with icon-only controls, immersive artwork, native system volume and a quality disclosure sheet.
 - Added library/queue numbering and counts, compact mini-player transport, and separate shuffle/repeat/favorite/queue accessibility labels.
 - Added a direct player-to-output path for matching observed formats, explicit mixer fallback, requested/actual rate reporting and separate rate versus representation-conversion explanations.
 - Added whole-library byte-identical duplicate scan/review/removal, actual hash revalidation, one-copy retention, history/favorite merging, shared-file safety and crash-recovery journalling.
 - Expanded offline PCM matrices to direct and mixer paths, added deletion/recovery/path tests and populated-player/accessibility-size/duplicate UI flows using real generated PCM/artwork. Test fixtures are DEBUG-only and isolated from the real library.
-- Version 0.6.0/build 6. Actual build/test/IPA results and remaining hardware limitations must be recorded after execution.
+- Version 0.6.0/build 6 passed unsigned Release and 80 unique tests; 48 offline PCM cases had zero numerical mismatches. Sixteen native screenshots and the actual arm64 device IPA were downloaded and inspected. Physical device/DAC acceptance remains pending; see PHASE-6-VERIFICATION.md.
