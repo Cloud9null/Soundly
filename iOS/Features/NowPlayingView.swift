@@ -30,6 +30,7 @@ struct NowPlayingView: View {
                         .accessibilityIdentifier("expandArtwork").disabled(playback.current == nil)
                         .padding(.bottom,22)
                     trackInformation
+                    SourceVisualizer()
                     progress.padding(.top,16)
                     transport.padding(.top,12)
                     HStack(spacing:12) {

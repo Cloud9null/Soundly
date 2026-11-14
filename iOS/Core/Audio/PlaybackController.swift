@@ -2,6 +2,7 @@ import Foundation
 import Observation
 import AVFoundation
 import MediaPlayer
+import UIKit
 import SwiftData
 
 @MainActor @Observable
@@ -22,13 +23,25 @@ final class PlaybackController {
     private var lastPersisted = Date.distantPast
     private var lastConfigured = Date.distantPast
     private var pendingRouteChange: UInt?
+    private var artworkTask: Task<Void,Never>?
+    private var systemArtwork: MPMediaItemArtwork?
+    private var artworkTrack: UUID?
     private var systemSecond = -1
     private var systemTrack: UUID?
     private var systemPlaying = false
     private var context: ModelContext?
     var current: PlaybackTrack? { queue.current }
 
-    init() {}
+    private(set) var settings = AudioSettings()
+    init() {
+        if let data = UserDefaults.standard.data(forKey:"audioSettings"),let saved = try? JSONDecoder().decode(AudioSettings.self,from:data) { settings = saved.validated }
+    }
+    func applyAudioSettings(_ value:AudioSettings) {
+        settings = value.validated
+        if let bytes = try? JSONEncoder().encode(settings) { UserDefaults.standard.set(bytes,forKey:"audioSettings") }
+        if current != nil { load(position:audio.elapsed,autoplay:audio.playing,recordPlay:false) }
+    }
+
 
     func attach(_ context:ModelContext) {
         guard self.context == nil else { return }
@@ -98,8 +111,20 @@ final class PlaybackController {
     private func load(position:Double = 0,autoplay:Bool = true,recordPlay:Bool = true) {
         guard let track = current else { return }
         audio = AudioObservation(); error = nil
+        artworkTask?.cancel(); systemArtwork = nil; artworkTrack = track.id
+        artworkTask = Task { [weak self] in
+            let data = await Task.detached { () -> Data? in
+                guard let name = track.artwork, let root = try? LibraryPaths.directory("Artwork"),
+                      let url = try? PrivateMusicFile.url(name,in:root) else { return nil }
+                return try? Data(contentsOf:url)
+            }.value
+            guard !Task.isCancelled, let self, self.current?.id == track.id,
+                  let data,let image = UIImage(data:data) else { return }
+            self.systemArtwork = MPMediaItemArtwork(boundsSize:image.size) { _ in image }
+            self.systemSecond = -1; self.updateSystemMetadata()
+        }
         lastConfigured = Date()
-        submit({ [transport] in _ = try await transport.load(track,position:position,autoplay:autoplay) },onSuccess: { [weak self] in
+        submit({ [transport, settings] in await transport.setSettings(settings); _ = try await transport.load(track,position:position,autoplay:autoplay) },onSuccess: { [weak self] in
             guard autoplay, recordPlay, let context = self?.context else { return }
             let id = track.id
             var q = FetchDescriptor<Song>(predicate:#Predicate { $0.id == id }); q.fetchLimit = 1
@@ -155,13 +180,15 @@ final class PlaybackController {
         let second = Int(max(0,audio.elapsed))
         guard current.id != systemTrack || second != systemSecond || audio.playing != systemPlaying else { return }
         systemTrack = current.id; systemSecond = second; systemPlaying = audio.playing
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = [
+        var info: [String:Any] = [
             MPMediaItemPropertyTitle:current.title, MPMediaItemPropertyArtist:current.artist,
             MPMediaItemPropertyAlbumTitle:current.album, MPMediaItemPropertyPlaybackDuration:audio.duration,
             MPNowPlayingInfoPropertyElapsedPlaybackTime:audio.elapsed,
             MPNowPlayingInfoPropertyPlaybackRate:audio.playing ? 1.0 : 0.0,
             MPNowPlayingInfoPropertyExcludeFromSuggestions:true
         ]
+        if artworkTrack == current.id,let artwork = systemArtwork { info[MPMediaItemPropertyArtwork] = artwork }
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
     }
     private func registerSystemEvents() {
         let center = MPRemoteCommandCenter.shared()

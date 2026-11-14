@@ -116,6 +116,7 @@ struct LibraryView: View {
             Picker("Browse by",selection:$mode) {
                 ForEach(["Songs","Albums","Artists","Album Artists","Genres","Composers","Folders"],id:\.self) { Text($0) }
             }.pickerStyle(.menu).padding(.horizontal)
+            NavigationLink("Playlists",destination:PlaylistsView()).padding(.vertical,8)
             SongResults(search:search,mode:mode,favorites:favorites,newest:newest,select:select)
             ImportStatusView().padding(.horizontal)
         }.soundlySurface().navigationTitle("Library").searchable(text:$search,prompt:"Songs, artists or albums")
@@ -241,7 +242,12 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section("Appearance") {
-                Picker("Theme",selection:$theme) { ForEach(SoundlyTheme.allCases) { Text($0.name).tag($0.rawValue) } }.accessibilityIdentifier("themePicker")
+                NavigationLink("Visualizer",destination:VisualizerSettingsView())
+                Picker("Theme",selection:$theme) {
+                    Section("Automatic") { Text("System").tag(SoundlyTheme.system.rawValue) }
+                    Section("Light") { ForEach(SoundlyTheme.allCases.filter { $0.scheme == .light }) { Text($0.name).tag($0.rawValue) } }
+                    Section("Dark") { ForEach(SoundlyTheme.allCases.filter { $0.scheme == .dark }) { Text($0.name).tag($0.rawValue) } }
+                }.accessibilityIdentifier("themePicker")
             }
             Section("Library") {
                 AddMusicButton()
@@ -283,11 +289,12 @@ struct SettingsView: View {
                 ImportStatusView()
             }
             Section("Audio") {
+                NavigationLink("Audio & Playback",destination:AudioSettingsView())
                 NavigationLink { SignalPathView() } label: {
                     Label("Signal Path",systemImage:"waveform.path")
                         .frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle())
                 }.accessibilityIdentifier("settingsSignalPath")
-                Text("Native-rate request · Unity application gain · No EQ, ReplayGain or crossfade").font(.footnote)
+                Text("Native-rate request · Optional EQ is bypassed in integrity mode").font(.footnote)
                 Text("Gapless transitions are not yet implemented. Output is Not Bit-Verified.").font(.footnote)
             }
             Section("Privacy") {
@@ -295,7 +302,7 @@ struct SettingsView: View {
                 Text("Music stays on this device. No external artwork or metadata lookups. Imported music is excluded from device backups; keep your original files.").font(.footnote)
             }
             Section("About") {
-                LabeledContent("Version",value:"0.6.0 (6)")
+                LabeledContent("Version",value:"0.7.0 (7)")
                 Text("Built with Apple frameworks. No third-party runtime code.")
             }
         }.soundlySurface().navigationTitle("Settings")

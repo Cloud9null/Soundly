@@ -12,6 +12,7 @@ struct SignalPathView: View {
                 Text(report.assessment.explanation).foregroundStyle(.secondary)
                 Label(report.rateSummary,systemImage:"waveform.path").font(.headline).accessibilityIdentifier("rateSummary")
                 if !playback.audio.playing { Label("Playback is paused or stopped. Values describe observed configuration, not verified output samples.",systemImage:"pause.circle").font(.footnote) }
+                chain
                 stage("1",title:"Source",evidence:"FILE METADATA",icon:"doc") {
                     Text(report.source.codec).font(.headline)
                     Text(Self.format(snapshot.source))
@@ -26,7 +27,7 @@ struct SignalPathView: View {
                     Text(Self.format(snapshot.engineOutput))
                     Text(report.graphPath.description)
                     LabeledContent("Application gain",value:snapshot.engineGain.map { String(format:"%.3f",$0) } ?? "Unknown")
-                    Text(snapshot.processing == .bypassed ? "No optional DSP, EQ, normalization or crossfade. Integer-to-float decoding remains disclosed; bypassing an app mixer does not bypass iOS processing." : "Engine processing has not been observed.")
+                    Text(snapshot.processing == .bypassed ? "No optional DSP, EQ, normalization or crossfade. Integer-to-float decoding remains disclosed; bypassing an app mixer does not bypass iOS processing." : "Optional DSP is applied: equalizer with −6 dB preamp. Output is modified.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
                 stage("4",title:"iOS audio session",evidence:"API REPORTED",icon:"iphone") {
@@ -67,6 +68,21 @@ struct SignalPathView: View {
                     .font(.footnote).foregroundStyle(.secondary)
             }.padding()
         }.soundlySurface().navigationTitle("Signal Path").navigationBarTitleDisplayMode(.inline)
+    }
+    private var chain:some View {
+        VStack(alignment:.leading,spacing:10) {
+            chainRow("Source · "+report.source.codec,Self.format(snapshot.source))
+            Image(systemName:"arrow.down").foregroundStyle(.secondary)
+            chainRow("Decoder",Self.format(snapshot.decoderOutput))
+            Image(systemName:"arrow.down").foregroundStyle(.secondary)
+            chainRow("Engine · "+report.graphPath.description,Self.format(snapshot.engineOutput))
+            Image(systemName:"arrow.down").foregroundStyle(.secondary)
+            chainRow("Active iOS output",Self.rate(snapshot.sessionSampleRate)+" · "+playback.audio.route)
+            Text("Bluetooth codec and physical DAC sample depth are not exposed by these APIs.").font(.caption).foregroundStyle(.secondary)
+        }.padding().background(.tint.opacity(0.06),in:RoundedRectangle(cornerRadius:22))
+    }
+    private func chainRow(_ name:String,_ value:String)->some View {
+        VStack(alignment:.leading,spacing:4) { Text(name).font(.headline); Text(value).font(.caption.monospaced()) }
     }
     private var statusSymbol:String {
         switch report.assessment.status {

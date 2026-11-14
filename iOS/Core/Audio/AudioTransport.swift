@@ -45,6 +45,9 @@ actor AudioTransport {
     private var rateRequestNote: String?
     private var graphPath = AudioGraphPath.unknown
     private var requestedRate: Double?
+    private var settings = AudioSettings()
+    private var equalizer: AVAudioUnitEQ?
+    func setSettings(_ value:AudioSettings) { settings = value.validated }
 
     func load(_ track: PlaybackTrack, position: Double = 0, autoplay: Bool = true) throws -> AudioObservation {
         guard track.filename == URL(fileURLWithPath:track.filename).lastPathComponent,
@@ -88,7 +91,22 @@ actor AudioTransport {
             rateRequestNote = "Requested \(String(format:"%.1f",requested/1000)) kHz; iOS activated \(String(format:"%.1f",session.sampleRate/1000)) kHz. The selected route did not provide the requested rate."
         }
         if !attached { engine.attach(player); attached = true }
-        graphPath = PCMGraph.connect(engine:engine,player:player,format:source.processingFormat,matchingOutput:hardware)
+        equalizer = nil
+        if settings.processing {
+            let eq = AVAudioUnitEQ(numberOfBands:5)
+            for i in 0..<5 {
+                let band = eq.bands[i]; band.filterType = .parametric
+                band.frequency = min(AudioSettings.frequencies[i],Float(source.processingFormat.sampleRate*0.45))
+                band.bandwidth = 1; band.gain = settings.gains[i]; band.bypass = false
+            }
+            eq.globalGain = -6; engine.attach(eq)
+            engine.connect(player,to:eq,format:source.processingFormat)
+            engine.connect(eq,to:engine.mainMixerNode,format:source.processingFormat)
+            engine.mainMixerNode.outputVolume = 1; player.volume = 1
+            equalizer = eq; graphPath = .equalizer
+        } else {
+            graphPath = PCMGraph.connect(engine:engine,player:player,format:source.processingFormat,matchingOutput:hardware)
+        }
         configured = true
     }
 
@@ -184,7 +202,7 @@ actor AudioTransport {
                 value.mixerRate = mixerFormat.sampleRate
                 value.signalPath.snapshot.engineOutput = SourceFormatInspector.pcm(mixerFormat)
                 value.signalPath.snapshot.engineGain = Double(player.volume) * (graphPath == .direct ? 1 : Double(engine.mainMixerNode.outputVolume))
-                value.signalPath.snapshot.processing = .bypassed
+                value.signalPath.snapshot.processing = settings.processing ? .applied : .bypassed
             }
         }
         if active {
@@ -223,9 +241,10 @@ enum PCMGraph {
 }
 
 enum AudioGraphPath: String, Sendable {
-    case unknown, direct, systemMixer
+    case unknown, direct, systemMixer, equalizer
     var description:String {
         switch self {
+        case .equalizer: "Player → EQ (−6 dB preamp) → main mixer → output"
         case .unknown: "Engine path not observed"
         case .direct: "AVAudioPlayerNode → output (main mixer bypassed)"
         case .systemMixer: "AVAudioPlayerNode → Apple main mixer → output"
