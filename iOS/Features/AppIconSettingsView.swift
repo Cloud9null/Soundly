@@ -8,7 +8,7 @@ struct AppIconSettingsView:View {
     private let choices = ["Prism","Aurora","Pulse","Orbit"]
     var body:some View {
         List {
-            Section("Soundly identity") {
+            Section {
                 ForEach(choices,id:\.self) { name in
                     Button { change(name) } label: {
                         HStack(spacing:16) {
@@ -21,7 +21,7 @@ struct AppIconSettingsView:View {
                         }.padding(.vertical,4).contentShape(Rectangle())
                     }.buttonStyle(.plain).disabled(changing || !UIApplication.shared.supportsAlternateIcons)
                 }
-            } footer: { Text("Changes the actual Home Screen icon using iOS. Prism remains the primary icon. iOS may display a confirmation; changing the icon does not alter your library.") }
+            } header: { Text("Soundly identity") } footer: { Text("Changes the actual Home Screen icon using iOS. Prism remains the primary icon. iOS may display a confirmation; changing the icon does not alter your library.") }
             if let message { Text(message).font(.footnote) }
         }.navigationTitle("App Icon").soundlySurface()
     }
