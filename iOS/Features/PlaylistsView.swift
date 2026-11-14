@@ -31,6 +31,7 @@ struct PlaylistsView:View {
     @AppStorage("localPlaylists") private var stored = Data()
     @State private var lists:[LocalPlaylist] = []
     @State private var name = ""
+    @FocusState private var naming:Bool
     @State private var importing = false
     @State private var exporting = false
     @State private var document = PlaylistDocument(data:Data())
@@ -38,11 +39,11 @@ struct PlaylistsView:View {
     var body:some View {
         List {
             Section("New playlist") {
-                TextField("Playlist name",text:$name).accessibilityIdentifier("playlistName")
+                TextField("Playlist name",text:$name).focused($naming).accessibilityIdentifier("playlistName")
                 Button("Create playlist") {
                     let title = name.trimmingCharacters(in:.whitespacesAndNewlines)
                     guard !title.isEmpty,title.count <= 200 else { return }
-                    lists.append(LocalPlaylist(name:title)); name = ""; save()
+                    lists.append(LocalPlaylist(name:title)); name = ""; naming = false; save()
                 }.accessibilityIdentifier("createPlaylist")
             }
             Section {
