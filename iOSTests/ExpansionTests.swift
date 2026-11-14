@@ -16,6 +16,28 @@ final class ExpansionTests:XCTestCase {
         let invalid = try JSONEncoder().encode(PlaylistExchange(playlists:[LocalPlaylist(name:"",hashes:[])]))
         XCTAssertThrowsError(try PlaylistExchange.decode(invalid))
     }
+    func testActualEQGraphAndIntegrityBypass() async throws {
+        let name = UUID().uuidString+".wav"
+        let url = try LibraryPaths.directory("Music").appendingPathComponent(name)
+        defer { try? FileManager.default.removeItem(at:url) }
+        let format = try XCTUnwrap(AVAudioFormat(standardFormatWithSampleRate:48000,channels:2))
+        let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat:format,frameCapacity:48000)); buffer.frameLength = 48000
+        for c in 0..<2 { for i in 0..<48000 { buffer.floatChannelData![c][i] = Float(sin(Double(i)*0.1))*0.01 } }
+        do { let file = try AVAudioFile(forWriting:url,settings:format.settings); try file.write(from:buffer) }
+        let track = PlaybackTrack(id:UUID(),filename:name,title:"EQ test",artist:"Reference",album:"Test",artwork:nil,sourceQuality:"PCM")
+        let audio = AudioTransport(); var settings = AudioSettings()
+        settings.integrity = false; settings.equalizer = true; settings.gains[2] = 3
+        await audio.setSettings(settings)
+        let processed = try await audio.load(track)
+        XCTAssertEqual(processed.signalPath.graphPath,.equalizer)
+        XCTAssertEqual(processed.signalPath.snapshot.processing,.applied)
+        await audio.stop()
+        settings.integrity = true; await audio.setSettings(settings)
+        let bypassed = try await audio.load(track)
+        XCTAssertNotEqual(bypassed.signalPath.graphPath,.equalizer)
+        XCTAssertEqual(bypassed.signalPath.snapshot.processing,.bypassed)
+        await audio.stop()
+    }
     func testSourceEnvelopeUsesActualDecodedSamples() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString+".wav")
         defer { try? FileManager.default.removeItem(at:url) }
