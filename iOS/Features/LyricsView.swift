@@ -10,6 +10,7 @@ struct LyricsView:View {
     @State private var importing = false
     @State private var importKey:String?
     @State private var confirming = false
+    @State private var removalKey:String?
     @State private var busy = false
     @State private var error:String?
     var body:some View {
@@ -37,12 +38,19 @@ struct LyricsView:View {
                 ToolbarItem(placement:.topBarTrailing) {
                     Menu("Lyrics options",systemImage:"ellipsis") {
                         Button("Import LRC / TXT",systemImage:"square.and.arrow.down") { importKey = key; importing = true }.disabled(key == nil || busy)
-                        Button("Remove local lyrics",role:.destructive) { confirming = true }.disabled(lyrics == nil || busy)
+                        Button("Remove local lyrics",role:.destructive) { removalKey = key; confirming = true }.disabled(lyrics == nil || busy)
                     }
                 }
             }
             .confirmationDialog("Remove lyrics for this track?",isPresented:$confirming,titleVisibility:.visible) {
-                Button("Remove lyrics",role:.destructive) { guard let key else { return }; Task { do { try await LyricsStore.shared.remove(key); lyrics = nil } catch { self.error = error.localizedDescription } } }
+                Button("Remove lyrics",role:.destructive) {
+                    guard let key = removalKey else { return };busy = true
+                    Task {
+                        defer { busy = false }
+                        do { try await LyricsStore.shared.remove(key); if self.key == key { lyrics = nil;error = nil } }
+                        catch { if self.key == key { self.error = "Could not remove local lyrics." } }
+                    }
+                }
             }
             .task(id:playback.current?.id) {
                 lyrics = nil;key = nil;error = nil
@@ -53,9 +61,13 @@ struct LyricsView:View {
                     let hash = song.fileHash;key = hash
                     let result = try await LyricsStore.shared.read(hash)
                     guard !Task.isCancelled else { return };lyrics = result
-                } catch { self.error = "Could not read local lyrics. Files were preserved." }
+                } catch { if !Task.isCancelled { self.error = "Could not read local lyrics. Files were preserved." } }
             }
             .fileImporter(isPresented:$importing,allowedContentTypes:[.data]) { result in
+                if case .failure(let failure) = result {
+                    let failure = failure as NSError
+                    if failure.domain == NSCocoaErrorDomain && failure.code == NSUserCancelledError { return }
+                }
                 guard let key = importKey else { return };busy = true
                 Task {
                     defer { busy = false }
@@ -69,7 +81,7 @@ struct LyricsView:View {
                         }.value
                         let result = try await LyricsStore.shared.write(key,data:bytes,synchronized:ext == "lrc")
                         if self.key == key { lyrics = result;error = nil }
-                    } catch { self.error = "Import failed. Existing lyrics were preserved. Use UTF-8 LRC/TXT up to 1 MiB." }
+                    } catch { if self.key == key { self.error = "Import failed. Existing lyrics were preserved. Use UTF-8 LRC/TXT up to 1 MiB." } }
                 }
             }
     }
