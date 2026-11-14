@@ -297,7 +297,7 @@
 "outputPaths" = ("$(SRCROOT)/iOS/Resources/Assets.xcassets/AppIcon.appiconset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/AppIcon-Aurora.appiconset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/IconPreview-Aurora.imageset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/AppIcon-Pulse.appiconset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/IconPreview-Pulse.imageset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/AppIcon-Orbit.appiconset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/IconPreview-Orbit.imageset/Icon.png");
 "runOnlyForDeploymentPostprocessing" = "0";
 "shellPath" = "/bin/sh";
-"shellScript" = "set -eu\n/usr/bin/swift \"$SRCROOT/Brand/GenerateAlternates.swift\" \"$SRCROOT/iOS/Resources/Assets.xcassets\"\n/usr/bin/sips -z 1024 1024 \"$SRCROOT/Brand/Prism-master.png\" --out \"$SRCROOT/iOS/Resources/Assets.xcassets/AppIcon.appiconset/Icon.png\" >/dev/null\n";
+"shellScript" = "set -eu\n/usr/bin/xcrun --sdk macosx swift -sdk \"$(/usr/bin/xcrun --sdk macosx --show-sdk-path)\" \"$SRCROOT/Brand/GenerateAlternates.swift\" \"$SRCROOT/iOS/Resources/Assets.xcassets\"\n/usr/bin/sips -z 1024 1024 \"$SRCROOT/Brand/Prism-master.png\" --out \"$SRCROOT/iOS/Resources/Assets.xcassets/AppIcon.appiconset/Icon.png\" >/dev/null\n";
 "alwaysOutOfDate" = "1";
 };
 "B2FD380DDD05C73E9B655613" = {
