@@ -1,6 +1,6 @@
 # Verification and phase ledger
 
-Current verified preview: **0.7.0 (7)**. Source `dca9720c2f226bb61fc2f169077926d53649a565` passed unsigned Release and 87 unique tests (19 domain, 46 app, 7 UI, 15 Python). The real arm64 device IPA was downloaded and inspected, including three alternate-icon declarations and exclusion of DEBUG fixture/audio markers. See PHASE-7.md and 0.7-GUIA.md. Physical device/DAC/system-artwork/icon switching acceptance remains pending. Earlier sections describe historical checkpoints.
+Current verified preview: **0.8.0 (8)**. Source `69d07a04dcbb665e4b305663d40be024e90e1d4d` passed unsigned Release and 96 unique tests (25 domain, 48 app, 8 UI, 15 Python). The actual arm64 IPA was downloaded and inspected, including version/bundle, Mach-O iOS platform, alternate icons and DEBUG fixture exclusions. Smart lists and local LRC/TXT lyrics are implemented. See PHASE-8.md and 0.8-GUIA.md for exact evidence, scope and remaining physical acceptance. Earlier sections describe historical checkpoints.
 
 ## Phase 0
 
@@ -28,7 +28,7 @@ The initial Phase 1 commit 9035c8b080c6ef97875897fd67355ac3e70685c4 passed the u
 
 The execution host is Linux without Swift/Xcode; actual iOS builds/tests run in GitHub macOS CI. A green macOS core-package check does not substitute for the iOS workflow. Refer to latest PR check logs for compiler/test results and retained evidence. Initial account artifact upload failed due to exhausted quota; changing visibility does not itself establish successful artifact delivery.
 
-No physical iPhone installation, DAC, audible playback, background playback, bit-perfect capture, format/rate matrix, or 100/1,000/10,000-track performance measurements have been performed. Linked external folders/bookmarks, comprehensive metadata edge cases, playlists/LRC, full listening-history Home sections and advanced acoustic duplicate matching remain later work. The importer shows aggregate counters and up to 20 per-file error details in the UI; it does not log filenames to CI.
+No physical iPhone installation, DAC, audible playback, background playback, bit-perfect capture, format/rate matrix, or 100/1,000/10,000-track performance measurements have been performed. Linked external folders/bookmarks, comprehensive metadata edge cases, custom smart rules, embedded lyrics/M3U, full listening-history Home sections and advanced acoustic duplicate matching remain later work. Manual playlists/JSON exchange and imported LRC/TXT now exist; see the latest report. The importer shows aggregate counters and up to 20 per-file error details in the UI; it does not log filenames to CI.
 
 Phase 3 implements the audio engine, queue, seek, interruption handling and system controls. Phase 4 binds actual observations to Signal Path UI. Phase 5 expands fixture/UI/accessibility/performance tests. Phase 6 verifies signing/installation and release readiness. An unsigned IPA from CI is an early app for signing/testing, not a completed music player or a verified installation.
 

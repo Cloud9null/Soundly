@@ -65,3 +65,11 @@ An iOS app target, importer, player and IPA are pending later phases.
 - Added ordered local playlists and validated Soundly JSON exchange; source-PCM visualizer styles/colors; light/dark theme grouping.
 - Added native Aurora/Pulse/Orbit alternate icons while keeping Prism primary.
 - Unsigned device build and 87 unique tests passed; actual IPA inspected. See PHASE-7.md for scope, exact hashes and remaining physical checks.
+
+## 0.8.0 preview — 2026-11-14
+
+- Added six local dynamic playlists with ordered playback queues from actual library metadata.
+- Added UTF-8 LRC/TXT import, protected private persistence, timestamp grouping/offsets, synchronized highlighting, line seek and confirmed removal. Target identity is preserved across automatic track changes; invalid replacements keep prior files.
+- Fixed playlist import success reporting after failed validation and Now Playing duration refresh after early artwork publication.
+- Preserved the existing library schema, bundle identifier, themes, icons and audio integrity policy.
+- Unsigned Release and 96 unique tests passed. The actual arm64 IPA, 48 offline PCM cases and native screenshot evidence were downloaded and checked; see PHASE-8.md. Physical DAC/system artwork and full lyrics-provider acceptance remain pending.

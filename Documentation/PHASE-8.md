@@ -1,4 +1,4 @@
-# 0.8 library and offline lyrics — verification pending
+# 0.8 library and offline lyrics — verified automated preview
 
 Adds local dynamic favorites/never-played/most-played/recent/Hi-Res/FLAC lists from actual Song metadata. Recent means 30 days, play counts count playback starts, Hi-Res describes original source metadata and says nothing about DAC output. Matches can be queued in the computed order; missing files are disabled. These are fixed local rules, not a custom-rule editor.
 
@@ -6,4 +6,19 @@ Adds per-track UTF-8 LRC/TXT import from Files, private atomic storage by file h
 
 Also fixes playlist import success reporting when persistence validation fails, and system metadata duration invalidation when early artwork publication precedes a paused file load. Version is 0.8.0/build 8 with the same bundle ID, primary Prism, alternate icons and existing library schema. Gapless, M3U, embedded lyrics and physical DAC/Lock Screen/icon acceptance remain separate scope.
 
-Added package parser tests, private lyrics-store validation/rollback/path tests, smart-rule metadata tests and a native smart-queue/lyrics-empty-state navigation test. These are authored checks; record actual CI results and artifact inspection after execution before claiming a verified 0.8 delivery.
+Added package parser tests, private lyrics-store validation/rollback/path tests, smart-rule metadata tests and a native smart-queue/lyrics-empty-state navigation test. The execution results below establish the scope actually checked.
+
+## Executed verification — 2026-11-14
+
+Application/test/build source: `69d07a04dcbb665e4b305663d40be024e90e1d4d`.
+CI: https://github.com/Cloud9null/Soundly/actions/runs/43652899710 . Xcode 26.3 (17C529) on macOS 26 passed reproducible-project validation, unsigned arm64 Release and **96 unique tests**: 25 domain, 48 app/integration, 8 native UI and 15 Python. The new parser, private lyrics persistence/invalid-replacement/path handling, actual smart-rule model checks and native smart-list → playback → Lyrics empty-state flow passed. Existing audio, artwork worker callbacks, playlists/relaunch, EQ/integrity, icon metadata, duplicate cleanup and scoped UI checks passed their regressions.
+
+The four downloaded offline PCM matrix records each contain 12 direct/mixer WAV/AIFF PCM16/24 cases through 192 kHz, all with zero numerical mismatched samples. These 48 cases are included within existing test methods, not 48 additional tests, and are not physical output captures. Seventeen actual native PNG screenshots exported; the final Lyrics empty state and populated full-screen player were visually inspected. Populated lyrics/file-provider interaction, automatic track-change/removal behavior and timed-line presentation still need manual device acceptance; parser/store tests and navigation do not establish those complete physical flows.
+
+Earlier attempts exposed floating timestamp arithmetic and a test locator that omitted the accessible row's track count. Timestamp grouping now uses integer milliseconds, and native rules have stable accessibility identifiers. Import and removal snapshot the target track; stale asynchronous results cannot clear another track's current lyrics, and picker cancellation is handled without a false import error. Failed/cancelled intermediate runs are not the delivery verification.
+
+Artifact: https://github.com/Cloud9null/Soundly/actions/runs/43652899710/artifacts/14136768626 (three-day retention). Its downloaded ZIP SHA-256 matched the advertised `12982fe48b2152715d447758ca234cc917f55825f77f9454acaab196cffeb950`.
+
+Inspected IPA: `Soundly-0.8.0-Prism-unsigned.ipa`, **4,278,296 bytes**, SHA-256 `08e59dd3023b29f9a60ac1bb674f9f5c854639cd69bb37d9eab0791d2b1655e8`. ZIP integrity, arm64 executable, Mach-O iOS platform 2 (not simulator), SDK 26.2, minimum iOS 26.0, version 0.8.0/build 8, unchanged `app.soundly.player`, background audio and Aurora/Pulse/Orbit declarations were checked. XCTest/provisioning payloads and actual DEBUG fixture/audio/launch markers are absent. The actual IPA was saved for delivery; personal Sideloadly signing is required.
+
+Physical Lock Screen/Control Center artwork, icon switching, background/route lifecycle, EQ response, output sample identity and broader device/accessibility/energy acceptance remain unverified. No route is Verified Bit-Perfect. No gapless, M3U, embedded lyrics, online provider or custom smart-rule editor is claimed. Existing build warnings include the MPVolumeView route-button deprecation and simulator/AppIntents tooling notices; there were no build errors. Main remains unmerged and PR #1 stays draft. Documentation-only follow-up preserves the verified application/test/build inputs. See [Spanish guide](0.8-GUIA.md) and [device acceptance](DEVICE-ACCEPTANCE.md).
