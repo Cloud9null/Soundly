@@ -7,6 +7,7 @@ import XCTest
         app.tabBars.buttons["Library"].tap();app.buttons["Smart Playlists"].tap();app.buttons["Never played"].tap()
         XCTAssertTrue(app.navigationBars["Never played"].waitForExistence(timeout:5))
         app.staticTexts["Reference 1"].firstMatch.tap()
+        app.buttons["miniPlayerOpen"].tap()
         XCTAssertTrue(app.buttons["playbackMenu"].waitForExistence(timeout:10))
         app.buttons["playbackMenu"].tap();app.buttons["Lyrics"].tap()
         XCTAssertTrue(app.navigationBars["Lyrics"].waitForExistence(timeout:5))
