@@ -57,3 +57,11 @@ An iOS app target, importer, player and IPA are pending later phases.
 - Added whole-library byte-identical duplicate scan/review/removal, actual hash revalidation, one-copy retention, history/favorite merging, shared-file safety and crash-recovery journalling.
 - Expanded offline PCM matrices to direct and mixer paths, added deletion/recovery/path tests and populated-player/accessibility-size/duplicate UI flows using real generated PCM/artwork. Test fixtures are DEBUG-only and isolated from the real library.
 - Version 0.6.0/build 6 passed unsigned Release and 80 unique tests; 48 offline PCM cases had zero numerical mismatches. Sixteen native screenshots and the actual arm64 device IPA were downloaded and inspected. Physical device/DAC acceptance remains pending; see PHASE-6-VERIFICATION.md.
+
+## 0.7.0 preview — 2026-11-14
+
+- Added cached system artwork publication and nonisolated MediaPlayer image callbacks.
+- Added observed chain summary, default-on integrity policy and optional five-band EQ with disclosed preamp/DSP state.
+- Added ordered local playlists and validated Soundly JSON exchange; source-PCM visualizer styles/colors; light/dark theme grouping.
+- Added native Aurora/Pulse/Orbit alternate icons while keeping Prism primary.
+- Unsigned device build and 87 unique tests passed; actual IPA inspected. See PHASE-7.md for scope, exact hashes and remaining physical checks.

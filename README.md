@@ -4,6 +4,12 @@
 
 Native iOS 26+ SwiftUI local music library and player under development. Official repository: Cloud9null/Soundly. Work is on `feat/ios-mvp` in draft PR #1; main is not overwritten or merged automatically.
 
+## Latest device preview — 0.7.0 (7)
+
+The [0.7 verification report](Documentation/PHASE-7.md) records the passing unsigned iPhone build and **87 unique tests** on source `dca9720c2f226bb61fc2f169077926d53649a565`. The actual arm64 IPA was downloaded, digest-checked, inspected and delivered. [Spanish quick guide](Documentation/0.7-GUIA.md).
+
+Adds cached system Now Playing artwork, an observed signal-chain summary, default-on integrity policy with optional real five-band EQ, ordered local playlists with Soundly JSON exchange, source-PCM envelope visualizer styles/colors, grouped light/dark themes and three selectable native alternate icons (Aurora/Pulse/Orbit). Prism stays primary. Physical system-artwork/icon switching, DAC/bit identity and wider acceptance still require device tests. JSON exchange does not implement M3U. Visuals describe pre-DSP source amplitudes, not DAC samples. The full product remains under development.
+
 ## Implemented
 
 - Reproducible checked-in Xcode project, Swift 6, user-selected Prism icon and privacy manifest.

@@ -1,6 +1,6 @@
 # Verification and phase ledger
 
-Current verified preview: **Phase 6 device-feedback refinement**, version **0.6.0 (6)**. The unsigned Release build and 80 unique tests passed on application/test commit `9da1e736ca806c9e727b91ad7eb290dc84271528`; the actual device IPA and native screenshots were downloaded and inspected. See PHASE-6-VERIFICATION.md and DEVICE-ACCEPTANCE.md. Earlier sections describe historical states.
+Current verified preview: **0.7.0 (7)**. Source `dca9720c2f226bb61fc2f169077926d53649a565` passed unsigned Release and 87 unique tests (19 domain, 46 app, 7 UI, 15 Python). The real arm64 device IPA was downloaded and inspected, including three alternate-icon declarations and exclusion of DEBUG fixture/audio markers. See PHASE-7.md and 0.7-GUIA.md. Physical device/DAC/system-artwork/icon switching acceptance remains pending. Earlier sections describe historical checkpoints.
 
 ## Phase 0
 
