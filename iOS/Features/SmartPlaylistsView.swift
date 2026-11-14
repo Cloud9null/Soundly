@@ -30,7 +30,7 @@ struct SmartPlaylistsView:View {
             ForEach(SmartRule.allCases) { rule in
                 NavigationLink { SmartPlaylistDetail(rule:rule) } label: {
                     HStack { Label(rule.rawValue,systemImage:"line.3.horizontal.decrease");Spacer();Text("\(songs.filter { rule.matches($0) }.count)").foregroundStyle(.secondary) }
-                }
+                }.accessibilityIdentifier("smartRule-"+rule.rawValue)
             }
             Text("Local dynamic rules. Hi-Res describes source metadata, not output. Play counts record successful playback starts. Recent means the last 30 days.").font(.footnote).foregroundStyle(.secondary)
         }.navigationTitle("Smart Playlists").soundlySurface()
