@@ -120,7 +120,7 @@ final class PlaybackController {
             }.value
             guard !Task.isCancelled, let self, self.current?.id == track.id,
                   let data,let image = UIImage(data:data) else { return }
-            self.systemArtwork = MPMediaItemArtwork(boundsSize:image.size) { _ in image }
+            self.systemArtwork = SystemArtwork.make(image)
             self.systemSecond = -1; self.updateSystemMetadata()
         }
         lastConfigured = Date()
@@ -295,4 +295,12 @@ struct AudioRouteEvent: Identifiable, Sendable {
     let id = UUID()
     let date = Date()
     let message:String
+}
+
+// MediaPlayer may request an image off the main actor. Construct the handler in a
+// nonisolated context so Swift 6 does not infer a main-actor-isolated callback.
+enum SystemArtwork {
+    nonisolated static func make(_ image:UIImage)->MPMediaItemArtwork {
+        MPMediaItemArtwork(boundsSize:image.size) { _ in image }
+    }
 }

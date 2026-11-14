@@ -1,8 +1,24 @@
 import XCTest
 import AVFoundation
+import UIKit
+import MediaPlayer
 @testable import Soundly
 
 final class ExpansionTests:XCTestCase {
+    @MainActor func testSystemArtworkCanBeRequestedOffMainActor() async throws {
+        let image = try XCTUnwrap(UIImage(systemName:"play.fill"))
+        let box = ArtworkTestBox(SystemArtwork.make(image))
+        let present = await Task.detached { box.value.image(at:CGSize(width:64,height:64)) != nil }.value
+        XCTAssertTrue(present)
+    }
+    @MainActor func testAlternateIconsArePackaged() throws {
+        let icons = try XCTUnwrap(Bundle.main.infoDictionary?["CFBundleIcons"] as? [String:Any])
+        let alternatives = try XCTUnwrap(icons["CFBundleAlternateIcons"] as? [String:Any])
+        for name in ["Aurora","Pulse","Orbit"] {
+            XCTAssertNotNil(alternatives["AppIcon-"+name])
+            XCTAssertNotNil(UIImage(named:"IconPreview-"+name))
+        }
+    }
     func testIntegrityOverridesEQAndMalformedGainsAreClamped() {
         var value = AudioSettings(); value.equalizer = true; value.gains = [6]
         XCTAssertFalse(value.processing)
@@ -48,4 +64,10 @@ final class ExpansionTests:XCTestCase {
         let values = try SourceEnvelope.analyze(url)
         XCTAssertEqual(values.count,256); XCTAssertEqual(values.first,0); XCTAssertEqual(values.last,0.5)
     }
+}
+
+// Read-only test handle: MediaPlayer artwork request handlers can run on a worker.
+private final class ArtworkTestBox:@unchecked Sendable {
+    let value:MPMediaItemArtwork
+    init(_ value:MPMediaItemArtwork) { self.value = value }
 }

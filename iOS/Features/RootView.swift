@@ -242,6 +242,7 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section("Appearance") {
+                NavigationLink("App Icon",destination:AppIconSettingsView())
                 NavigationLink("Visualizer",destination:VisualizerSettingsView())
                 Picker("Theme",selection:$theme) {
                     Section("Automatic") { Text("System").tag(SoundlyTheme.system.rawValue) }
