@@ -21,12 +21,12 @@ public struct LyricsDocument:Equatable,Sendable {
         let expression = try NSRegularExpression(pattern:#"\[(\d{1,5}):([0-5]\d)(?:[.:](\d{1,3}))?\]"#)
         let offsetExpression = try NSRegularExpression(pattern:#"(?i)^\[offset:([+-]?\d+)\]$"#)
         let lines = text.components(separatedBy:"\n")
-        var offset = 0.0
+        var offset = 0
         for line in lines {
             let s = line.trimmingCharacters(in:.whitespaces)
-            if let match = offsetExpression.firstMatch(in:s,range:NSRange(s.startIndex...,in:s)),let r = Range(match.range(at:1),in:s),let value = Double(s[r]),abs(value) <= 3_600_000 { offset = value/1000 }
+            if let match = offsetExpression.firstMatch(in:s,range:NSRange(s.startIndex...,in:s)),let r = Range(match.range(at:1),in:s),let value = Int(s[r]),(-3_600_000...3_600_000).contains(value) { offset = value }
         }
-        var groups:[Double:[String]] = [:];var plain:[String] = [];var count = 0
+        var groups:[Int:[String]] = [:];var plain:[String] = [];var count = 0
         for line in lines {
             let range = NSRange(line.startIndex...,in:line)
             let matches = expression.matches(in:line,range:range)
@@ -39,11 +39,12 @@ public struct LyricsDocument:Equatable,Sendable {
                 count += 1; guard count <= 20000 else { throw LyricsError.tooLarge }
                 func part(_ index:Int)->String { Range(match.range(at:index),in:line).map { String(line[$0]) } ?? "" }
                 let fraction = part(3)
-                let time = max(0,(Double(part(1)) ?? 0)*60+(Double(part(2)) ?? 0)+(fraction.isEmpty ? 0 : (Double(fraction) ?? 0)/pow(10,Double(fraction.count)))+offset)
+                let milliseconds = Int(fraction.padding(toLength:3,withPad:"0",startingAt:0)) ?? 0
+                let time = max(0,(Int(part(1)) ?? 0)*60_000+(Int(part(2)) ?? 0)*1000+milliseconds+offset)
                 groups[time,default:[]].append(words)
             }
         }
-        let cues = groups.keys.sorted().map { LyricCue(time:$0,text:groups[$0]!.joined(separator:"\n")) }
+        let cues = groups.keys.sorted().map { LyricCue(time:Double($0)/1000,text:groups[$0]!.joined(separator:"\n")) }
         return Self(text:cues.isEmpty ? plain.joined(separator:"\n") : cues.map(\.text).joined(separator:"\n"),cues:cues)
     }
 }
