@@ -1,0 +1,9 @@
+# 0.8 library and offline lyrics — verification pending
+
+Adds local dynamic favorites/never-played/most-played/recent/Hi-Res/FLAC lists from actual Song metadata. Recent means 30 days, play counts count playback starts, Hi-Res describes original source metadata and says nothing about DAC output. Matches can be queued in the computed order; missing files are disabled. These are fixed local rules, not a custom-rule editor.
+
+Adds per-track UTF-8 LRC/TXT import from Files, private atomic storage by file hash without database schema migration, timestamp parsing (multiple tags, 1–3 fractional digits, offsets, stable grouping/sorting), binary-search current cue, lazy line display, seek-by-line, static text and explicit removal. No online lyrics service or embedded-lyrics extraction is added. Imported timing is author-supplied and follows the player's observed elapsed position, not physical DAC timing. Provider downloads may be needed during user-selected import; retained lyrics are offline. A picker snapshots its target track so an automatic song change cannot attach lyrics to a different track. Invalid replacements preserve existing stored lyrics. Files are bounded to 1 MiB/20,000 timestamp cues.
+
+Also fixes playlist import success reporting when persistence validation fails, and system metadata duration invalidation when early artwork publication precedes a paused file load. Version is 0.8.0/build 8 with the same bundle ID, primary Prism, alternate icons and existing library schema. Gapless, M3U, embedded lyrics and physical DAC/Lock Screen/icon acceptance remain separate scope.
+
+Added package parser tests, private lyrics-store validation/rollback/path tests, smart-rule metadata tests and a native smart-queue/lyrics-empty-state navigation test. These are authored checks; record actual CI results and artifact inspection after execution before claiming a verified 0.8 delivery.

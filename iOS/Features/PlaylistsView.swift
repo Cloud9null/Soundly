@@ -88,14 +88,14 @@ struct PlaylistsView:View {
                     let url = try result.get(); let scoped = url.startAccessingSecurityScopedResource(); defer { if scoped { url.stopAccessingSecurityScopedResource() } }
                     let attributes = try url.resourceValues(forKeys:[.fileSizeKey]); guard (attributes.fileSize ?? Int.max) <= 2*1024*1024 else { throw CocoaError(.fileReadTooLarge) }
                     let exchange = try PlaylistExchange.decode(Data(contentsOf:url))
-                    for var list in exchange.playlists { list.id = UUID(); lists.append(list) }; save()
-                    message = "Imported \(exchange.playlists.count) playlists. Music files are not included."
+                    for var list in exchange.playlists { list.id = UUID(); lists.append(list) }
+                    if save() { message = "Imported \(exchange.playlists.count) playlists. Music files are not included." }
                 } catch { message = "Import failed: \(error.localizedDescription)" }
             }
     }
     private func resolved(_ list:LocalPlaylist)->[Song] { list.hashes.compactMap { hash in songs.first { $0.fileHash == hash } } }
-    private func save() {
-        do { let bytes = try JSONEncoder().encode(PlaylistExchange(playlists:lists)); _ = try PlaylistExchange.decode(bytes); stored = bytes }
-        catch { message = "Playlists could not be saved." }
+    @discardableResult private func save()->Bool {
+        do { let bytes = try JSONEncoder().encode(PlaylistExchange(playlists:lists)); _ = try PlaylistExchange.decode(bytes); stored = bytes; return true }
+        catch { message = "Playlists could not be saved. Previous saved data was preserved."; return false }
     }
 }

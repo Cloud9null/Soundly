@@ -117,6 +117,7 @@ struct LibraryView: View {
                 ForEach(["Songs","Albums","Artists","Album Artists","Genres","Composers","Folders"],id:\.self) { Text($0) }
             }.pickerStyle(.menu).padding(.horizontal)
             NavigationLink("Playlists",destination:PlaylistsView()).padding(.vertical,8)
+            NavigationLink("Smart Playlists",destination:SmartPlaylistsView()).padding(.bottom,8)
             SongResults(search:search,mode:mode,favorites:favorites,newest:newest,select:select)
             ImportStatusView().padding(.horizontal)
         }.soundlySurface().navigationTitle("Library").searchable(text:$search,prompt:"Songs, artists or albums")
@@ -303,7 +304,7 @@ struct SettingsView: View {
                 Text("Music stays on this device. No external artwork or metadata lookups. Imported music is excluded from device backups; keep your original files.").font(.footnote)
             }
             Section("About") {
-                LabeledContent("Version",value:"0.7.0 (7)")
+                LabeledContent("Version",value:"0.8.0 (8)")
                 Text("Built with Apple frameworks. No third-party runtime code.")
             }
         }.soundlySurface().navigationTitle("Settings")

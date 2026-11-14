@@ -1,6 +1,18 @@
 import XCTest
 
 @MainActor final class ExpansionUITests:XCTestCase {
+    func testSmartQueueAndOfflineLyricsMenu() {
+        let app = XCUIApplication();app.launchArguments = ["--soundly-fixtures"];app.launch()
+        XCTAssertTrue(app.navigationBars["Listen"].waitForExistence(timeout:30))
+        app.tabBars.buttons["Library"].tap();app.buttons["Smart Playlists"].tap();app.buttons["Never played"].tap()
+        XCTAssertTrue(app.navigationBars["Never played"].waitForExistence(timeout:5))
+        app.staticTexts["Reference 1"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["playbackMenu"].waitForExistence(timeout:10))
+        app.buttons["playbackMenu"].tap();app.buttons["Lyrics"].tap()
+        XCTAssertTrue(app.navigationBars["Lyrics"].waitForExistence(timeout:5))
+        XCTAssertTrue(app.staticTexts["Your words, offline"].waitForExistence(timeout:5))
+        let shot = XCTAttachment(screenshot:app.screenshot());shot.name = "Offline lyrics empty state";shot.lifetime = .keepAlways;add(shot)
+    }
     func testPlaylistCreationTrackSelectionAndPersistence() {
         let app = XCUIApplication(); app.launchArguments = ["--soundly-fixtures"]; app.launch()
         XCTAssertTrue(app.navigationBars["Listen"].waitForExistence(timeout:30))

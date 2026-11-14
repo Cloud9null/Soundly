@@ -26,6 +26,7 @@ final class PlaybackController {
     private var artworkTask: Task<Void,Never>?
     private var systemArtwork: MPMediaItemArtwork?
     private var artworkTrack: UUID?
+    private var systemDuration = -1.0
     private var systemSecond = -1
     private var systemTrack: UUID?
     private var systemPlaying = false
@@ -178,8 +179,8 @@ final class PlaybackController {
         [commands.playCommand,commands.pauseCommand,commands.togglePlayPauseCommand,commands.nextTrackCommand,commands.previousTrackCommand,commands.changePlaybackPositionCommand,commands.stopCommand].forEach { $0.isEnabled = current != nil }
         guard let current else { MPNowPlayingInfoCenter.default().nowPlayingInfo = nil; return }
         let second = Int(max(0,audio.elapsed))
-        guard current.id != systemTrack || second != systemSecond || audio.playing != systemPlaying else { return }
-        systemTrack = current.id; systemSecond = second; systemPlaying = audio.playing
+        guard current.id != systemTrack || second != systemSecond || audio.playing != systemPlaying || audio.duration != systemDuration else { return }
+        systemTrack = current.id; systemSecond = second; systemPlaying = audio.playing; systemDuration = audio.duration
         var info: [String:Any] = [
             MPMediaItemPropertyTitle:current.title, MPMediaItemPropertyArtist:current.artist,
             MPMediaItemPropertyAlbumTitle:current.album, MPMediaItemPropertyPlaybackDuration:audio.duration,

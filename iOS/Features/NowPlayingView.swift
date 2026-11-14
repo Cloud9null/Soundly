@@ -16,6 +16,7 @@ struct NowPlayingView: View {
     @State private var dragging = false
     @State private var favorite = false
     @State private var quality = false
+    @State private var lyrics = false
     @State private var queue = false
     @State private var artwork = false
 
@@ -46,6 +47,9 @@ struct NowPlayingView: View {
         .background { ambient }
         .safeAreaInset(edge:.top,spacing:0) { header }
         .safeAreaInset(edge:.bottom,spacing:0) { footer }
+        .sheet(isPresented:$lyrics) {
+            NavigationStack { LyricsView().toolbar { ToolbarItem(placement:.confirmationAction) { Button("Done") { lyrics = false } } } }
+        }
         .sheet(isPresented:$quality) {
             NavigationStack {
                 SignalPathView().toolbar {
@@ -153,6 +157,7 @@ struct NowPlayingView: View {
             iconButton("Queue",symbol:"list.bullet",id:"openQueue") { queue = true }
             Spacer()
             Menu {
+                Button("Lyrics",systemImage:"text.quote") { lyrics = true }
                 Button("Audio quality",systemImage:"waveform") { quality = true }
                 Button("Stop playback",systemImage:"stop") { playback.stop() }
                     .disabled(playback.current == nil)
