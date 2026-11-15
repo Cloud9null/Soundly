@@ -56,12 +56,13 @@ struct CoverView: View {
     var artwork: String? = nil
     var size: CGFloat = 56
     var cornerRadius:CGFloat? = nil
+    var fitArtwork = false
     @State private var image: UIImage?
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: size * 0.13).fill(.tint.opacity(0.13))
             if let image {
-                Image(uiImage:image).resizable().scaledToFill()
+                Image(uiImage:image).resizable().aspectRatio(contentMode:fitArtwork ? .fit : .fill)
             } else {
                 Image(systemName: "waveform").font(.system(size: size * 0.35)).foregroundStyle(.tint)
             }

@@ -12,11 +12,13 @@ struct NowPlayingView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
     @Environment(\.soundlySurface) private var surface
+    @AppStorage("visualizerStyle") private var visualizerStyle = "Off"
     @State private var position = 0.0
     @State private var dragging = false
     @State private var favorite = false
     @State private var quality = false
     @State private var lyrics = false
+    @State private var visualizerSettings = false
     @State private var queue = false
     @State private var artwork = false
 
@@ -25,13 +27,15 @@ struct NowPlayingView: View {
             ScrollView {
                 VStack(spacing:0) {
                     Button { artwork = true } label: {
-                        CoverView(artwork:playback.current?.artwork,size:coverSize(geometry.size),cornerRadius:12)
+                        CoverView(artwork:playback.current?.artwork,size:coverSize(geometry.size),cornerRadius:20,fitArtwork:true)
+                            .fixedSize()
                             .shadow(color:.black.opacity(0.18),radius:24,y:14)
-                    }.buttonStyle(.plain).accessibilityLabel("View full-screen artwork")
+                    }.buttonStyle(.plain).frame(width:coverSize(geometry.size),height:coverSize(geometry.size))
+                        .accessibilityLabel("View full-screen artwork")
                         .accessibilityIdentifier("expandArtwork").disabled(playback.current == nil)
                         .padding(.bottom,22)
                     trackInformation
-                    SourceVisualizer()
+                    SourceVisualizer().padding(.top,visualizerStyle == "Off" ? 0 : 14)
                     progress.padding(.top,16)
                     transport.padding(.top,12)
                     HStack(spacing:12) {
@@ -40,13 +44,16 @@ struct NowPlayingView: View {
                         Image(systemName:"speaker.wave.3.fill")
                     }.font(.caption).foregroundStyle(.secondary).padding(.top,10)
                     if let error = playback.error { Text(error).font(.footnote).foregroundStyle(.red).padding(.top,12) }
-                }.frame(maxWidth:520).padding(.horizontal,28).padding(.vertical,12)
-                    .frame(maxWidth:.infinity,minHeight:geometry.size.height,alignment:.center)
+                }.frame(maxWidth:520).padding(.horizontal,28).padding(.top,18).padding(.bottom,24)
+                    .frame(maxWidth:.infinity,minHeight:geometry.size.height,alignment:.top)
             }.scrollIndicators(.hidden).clipped()
         }
         .background { ambient }
         .safeAreaInset(edge:.top,spacing:0) { header }
         .safeAreaInset(edge:.bottom,spacing:0) { footer }
+        .sheet(isPresented:$visualizerSettings) {
+            NavigationStack { VisualizerSettingsView().toolbar { ToolbarItem(placement:.confirmationAction) { Button("Done") { visualizerSettings = false } } } }
+        }
         .sheet(isPresented:$lyrics) {
             NavigationStack { LyricsView().toolbar { ToolbarItem(placement:.confirmationAction) { Button("Done") { lyrics = false } } } }
         }
@@ -70,7 +77,7 @@ struct NowPlayingView: View {
     }
     private func coverSize(_ size:CGSize)->CGFloat {
         if textSize.isAccessibilitySize { return min(180,max(100,size.width*0.45)) }
-        return max(120,min(min(size.width-56,max(120,size.height-330)),440))
+        return max(120,min(min(size.width-56,max(120,size.height-(visualizerStyle == "Off" ? 350 : 420))),440))
     }
     private var ambient:some View {
         GeometryReader { geometry in
@@ -135,11 +142,11 @@ struct NowPlayingView: View {
     private var transport:some View {
         HStack {
             Spacer()
-            Button { playback.previous() } label: { Image(systemName:"backward.end.fill").font(.system(size:28,weight:.medium)).frame(width:64,height:64).contentShape(Rectangle()) }.accessibilityLabel("Previous")
+            Button { playback.previous() } label: { Image(systemName:"backward.end.fill").font(.system(size:25,weight:.semibold)).frame(width:64,height:64).contentShape(Rectangle()) }.accessibilityLabel("Previous")
             Spacer()
-            Button { playback.toggle() } label: { Image(systemName:playback.audio.playing ? "pause.fill" : "play.fill").font(.system(size:42,weight:.medium)).frame(width:80,height:68).contentShape(Rectangle()) }.accessibilityLabel(playback.audio.playing ? "Pause" : "Play").accessibilityIdentifier("transportToggle")
+            Button { playback.toggle() } label: { Image(systemName:playback.audio.playing ? "pause.fill" : "play.fill").font(.system(size:30,weight:.semibold)).offset(x:playback.audio.playing ? 0 : 2).frame(width:76,height:76).contentShape(Circle()).glassEffect(in:.circle) }.accessibilityLabel(playback.audio.playing ? "Pause" : "Play").accessibilityIdentifier("transportToggle")
             Spacer()
-            Button { playback.next() } label: { Image(systemName:"forward.end.fill").font(.system(size:28,weight:.medium)).frame(width:64,height:64).contentShape(Rectangle()) }.accessibilityLabel("Next")
+            Button { playback.next() } label: { Image(systemName:"forward.end.fill").font(.system(size:25,weight:.semibold)).frame(width:64,height:64).contentShape(Rectangle()) }.accessibilityLabel("Next")
             Spacer()
         }.labelStyle(.iconOnly).buttonStyle(.plain).foregroundStyle(.primary)
             .disabled(playback.busy || playback.current == nil)
@@ -158,6 +165,7 @@ struct NowPlayingView: View {
             Spacer()
             Menu {
                 Button("Lyrics",systemImage:"text.quote") { lyrics = true }
+                Button("Visualizer",systemImage:"waveform.path") { visualizerSettings = true }
                 Button("Audio quality",systemImage:"waveform") { quality = true }
                 Button("Stop playback",systemImage:"stop") { playback.stop() }
                     .disabled(playback.current == nil)
@@ -169,7 +177,7 @@ struct NowPlayingView: View {
     private func iconButton(_ title:String,symbol:String,id:String,active:Bool = false,action:@escaping()->Void)->some View {
         Button(action:action) {
             Image(systemName:symbol).font(.system(size:20,weight:.medium)).frame(width:44,height:44)
-                .background(active ? Color.accentColor.opacity(0.13) : .clear,in:RoundedRectangle(cornerRadius:12)).contentShape(Rectangle())
+                .background(active ? Color.accentColor.opacity(0.13) : .clear,in:Circle()).contentShape(Rectangle())
         }.buttonStyle(.plain).foregroundStyle(active ? Color.accentColor : Color.primary)
             .accessibilityLabel(title).accessibilityIdentifier(id)
     }

@@ -43,6 +43,19 @@ import XCTest
         assertFooter(app)
         capture(app,"Player at accessibility2 text size")
     }
+    func testSquareArtworkAndEnabledVisualizerStayBelowHeader() {
+        let app = XCUIApplication();app.launchArguments = ["--soundly-fixtures","--soundly-visualizer"];app.launch()
+        XCTAssertTrue(app.navigationBars["Listen"].waitForExistence(timeout:30))
+        app.tabBars.buttons["Library"].tap();app.staticTexts["Reference 1"].firstMatch.tap()
+        let cover = app.buttons["expandArtwork"]
+        XCTAssertTrue(cover.waitForExistence(timeout:10))
+        XCTAssertEqual(cover.frame.width,cover.frame.height,accuracy:1)
+        XCTAssertGreaterThanOrEqual(cover.frame.minY,app.buttons["nowPlayingDone"].frame.maxY)
+        XCTAssertTrue(app.descendants(matching:.any)["sourceVisualizer"].waitForExistence(timeout:30))
+        let pause = app.buttons["transportToggle"];if pause.label == "Pause" { pause.tap() }
+        assertFooter(app)
+        capture(app,"Refined glass player with source mirror waveform")
+    }
     func testDuplicateScanReviewAndRemoval() {
         let app = XCUIApplication(); app.launchArguments = ["--soundly-fixtures","--soundly-duplicates"]; app.launch()
         XCTAssertTrue(app.navigationBars["Listen"].waitForExistence(timeout:30))
