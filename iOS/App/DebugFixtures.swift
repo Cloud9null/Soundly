@@ -57,7 +57,9 @@ import CryptoKit
                 ("SOUNDLY · TEST PCM" as NSString).draw(at:CGPoint(x:36,y:448),withAttributes:[.font:UIFont.systemFont(ofSize:17,weight:.medium),.foregroundColor:UIColor.white.withAlphaComponent(0.8)])
             }
             if let jpeg = image.jpegData(compressionQuality:0.9),let name = item.artwork { try jpeg.write(to:LibraryPaths.directory("Artwork").appendingPathComponent(name)) }
-            let song = Song(item); song.dateAdded = Date(timeIntervalSince1970:Double(index)); db.mainContext.insert(song)
+            let song = Song(item)
+            if index == 0 && ProcessInfo.processInfo.arguments.contains("--soundly-visualizer") { song.title = "Reference 1 — A long song title featuring another artist, deluxe edition" }
+            song.dateAdded = Date(timeIntervalSince1970:Double(index)); db.mainContext.insert(song)
         }
         try db.mainContext.save()
         UserDefaults.standard.set("amethyst",forKey:"theme")

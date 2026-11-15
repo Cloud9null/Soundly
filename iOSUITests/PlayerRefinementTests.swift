@@ -46,7 +46,7 @@ import XCTest
     func testSquareArtworkAndEnabledVisualizerStayBelowHeader() {
         let app = XCUIApplication();app.launchArguments = ["--soundly-fixtures","--soundly-visualizer"];app.launch()
         XCTAssertTrue(app.navigationBars["Listen"].waitForExistence(timeout:30))
-        app.tabBars.buttons["Library"].tap();app.staticTexts["Reference 1"].firstMatch.tap()
+        app.tabBars.buttons["Library"].tap();app.staticTexts.containing(NSPredicate(format:"label BEGINSWITH %@","Reference 1")).firstMatch.tap()
         let cover = app.buttons["expandArtwork"]
         XCTAssertTrue(cover.waitForExistence(timeout:10))
         XCTAssertEqual(cover.frame.width,cover.frame.height,accuracy:1)
