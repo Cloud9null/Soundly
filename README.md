@@ -8,7 +8,7 @@ Native iOS 26+ SwiftUI local music library and player under development. Officia
 
 Now Playing preserves square artwork, refines native glass transport controls and adds smooth filled Wave/Mirror, rounded Bars and expanded gradient colors. [Verification and download](Documentation/PHASE-9.md) records the successful unsigned iPhone build and 97 unique tests. [Spanish update guide](Documentation/0.9-GUIA.md).
 
-The actual IPA was packaged and uploaded by GitHub CI. Final artifact bytes could not be locally inspected or copied for separate delivery after the session environment became unavailable; the GitHub artifact contains Soundly-unsigned.ipa. Earlier screenshots using the same production UI were reviewed. Physical device acceptance remains pending.
+The actual IPA was packaged by GitHub CI, then downloaded after environment recovery, archive-digest checked and locally inspected as an arm64 iPhoneOS 0.9.0/build 9 app. A standalone copy was delivered for personal Sideloadly signing. Physical device acceptance remains pending; see the verification report for exact hashes and scope.
 
 Retains offline import/playback, honest Signal Path, integrity policy/EQ, smart/manual playlists, local LRC/TXT lyrics, themes and selectable alternate icons. Visualization describes source amplitudes before DSP, not DAC samples. The full product remains under development.
 

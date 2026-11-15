@@ -1,6 +1,6 @@
 # Verification and phase ledger
 
-Current verified preview: **0.9.0 (9)**. Source 35df22b1fdb5206e346c31f93fccf0d945bfadd8 passed unsigned iPhone Release and 97 unique tests (25 domain, 48 app, 9 UI, 15 Python). GitHub packaged/uploaded the actual IPA in soundly-ios.zip. The final archive was not locally inspected after the execution environment became unavailable. Earlier matching-production-code player screenshots were reviewed. See PHASE-9.md for artifact, precise scope and remaining physical acceptance; 0.9-GUIA.md explains updating. Earlier sections are historical checkpoints.
+Current verified preview: **0.9.0 (9)**. Source 35df22b1fdb5206e346c31f93fccf0d945bfadd8 passed unsigned iPhone Release and 97 unique tests (25 domain, 48 app, 9 UI, 15 Python). After environment recovery, the actual archive was downloaded/digest-checked and the arm64 iPhoneOS IPA was extracted and inspected locally, then delivered separately. See PHASE-9.md for precise evidence/hashes and remaining physical acceptance. Earlier sections are historical checkpoints.
 
 ## Phase 0
 
