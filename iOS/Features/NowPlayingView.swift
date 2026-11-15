@@ -35,7 +35,7 @@ struct NowPlayingView: View {
                         .accessibilityIdentifier("expandArtwork").disabled(playback.current == nil)
                         .padding(.bottom,22)
                     trackInformation
-                    VStack(spacing:16) {
+                    VStack(spacing:12) {
                         progress
                         transport
                         HStack(spacing:12) {
@@ -43,7 +43,7 @@ struct NowPlayingView: View {
                             SystemVolumeControl().frame(height:32).accessibilityLabel("System volume")
                             Image(systemName:"speaker.wave.3.fill")
                         }.font(.caption).foregroundStyle(.secondary)
-                    }.padding(18).glassEffect(in:RoundedRectangle(cornerRadius:26))
+                    }.padding(14).glassEffect(in:RoundedRectangle(cornerRadius:26))
                         .accessibilityElement(children:.contain).accessibilityIdentifier("playbackDeck").padding(.top,18)
                     if let error = playback.error { Text(error).font(.footnote).foregroundStyle(.red).padding(.top,12) }
                 }.frame(maxWidth:520).padding(.horizontal,28).padding(.top,18).padding(.bottom,24)
@@ -79,7 +79,7 @@ struct NowPlayingView: View {
     }
     private func coverSize(_ size:CGSize)->CGFloat {
         if textSize.isAccessibilitySize { return min(180,max(100,size.width*0.45)) }
-        return max(120,min(min(size.width-56,max(120,size.height-360)),440))
+        return max(120,min(min(size.width-56,max(120,size.height-410)),440))
     }
     private var ambient:some View {
         GeometryReader { geometry in
@@ -112,7 +112,7 @@ struct NowPlayingView: View {
                 VStack(alignment:.leading,spacing:4) {
                     Text(playback.current?.title ?? "Nothing playing").font(.title2.bold()).lineLimit(2)
                     Text(playback.current.map { $0.artist + " · " + $0.album } ?? "Choose a song from your library to begin.")
-                        .font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
+                        .font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
                 }.frame(maxWidth:.infinity,alignment:.leading)
                 if playback.current != nil {
                     iconButton(favorite ? "Unfavorite" : "Favorite",symbol:favorite ? "star.fill" : "star",id:"favoriteToggle",active:favorite) { changeFavorite() }
@@ -133,7 +133,7 @@ struct NowPlayingView: View {
     private var progress:some View {
         VStack(spacing:6) {
             GeometryReader { geometry in
-                let fraction = min(1,max(0,position/max(1,playback.audio.duration)))
+                let fraction = min(1,max(0,position/max(0.001,playback.audio.duration)))
                 ZStack(alignment:.leading) {
                     SourceVisualizer(progress:fraction)
                     Capsule().fill(.primary.opacity(0.12)).frame(height:2)
