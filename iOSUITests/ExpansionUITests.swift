@@ -37,6 +37,7 @@ import XCTest
         app.textFields["playlistName"].tap(); app.textFields["playlistName"].typeText(String(name))
         app.buttons["createPlaylist"].tap(); app.buttons[String(name)].tap()
         XCTAssertTrue(app.navigationBars[String(name)].waitForExistence(timeout:5))
+        XCTAssertTrue(app.buttons["Export M3U8"].exists)
         app.buttons.containing(NSPredicate(format:"label CONTAINS %@","Reference 1")).firstMatch.tap()
         XCTAssertTrue(app.staticTexts.containing(NSPredicate(format:"label CONTAINS[c] %@","Tracks · 1")).firstMatch.exists)
         app.terminate(); app.launch(); XCTAssertTrue(app.navigationBars["Listen"].waitForExistence(timeout:30))
