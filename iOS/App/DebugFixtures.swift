@@ -7,6 +7,7 @@ import CryptoKit
 @MainActor enum DebugFixtures {
     static var enabled:Bool { ProcessInfo.processInfo.arguments.contains("--soundly-fixtures") }
     static func prepare(_ db:ModelContainer) async throws {
+        let visualizer = ProcessInfo.processInfo.arguments.contains("--soundly-visualizer")
         let duplicate = ProcessInfo.processInfo.arguments.contains("--soundly-duplicates")
         let items = try await Task.detached {
             let music = try LibraryPaths.directory("Music")
@@ -22,7 +23,10 @@ import CryptoKit
             pcm.withUnsafeMutableBytes { buffer in
                 let p = buffer.bindMemory(to:UInt8.self)
                 for i in 0..<frames {
-                    let a:Int32 = i%2 == 0 ? 4096 : -2048
+                    let t = Double(i)/44100
+                    let envelope = (0.5+0.5*sin(t*2.1))*(0.4+0.6*pow(cos(t*0.7),2))
+                    let magnitude:Int32 = visualizer ? Int32(envelope*2_000_000) : 4096
+                    let a:Int32 = i%2 == 0 ? magnitude : -magnitude/2
                     for channel in 0..<2 {
                         let value = channel == 0 ? a : -a
                         for byte in 0..<3 { p[i*6+channel*3+byte] = UInt8(truncatingIfNeeded:value >> (byte*8)) }
