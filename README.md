@@ -4,13 +4,13 @@
 
 Native iOS 26+ SwiftUI local music library and player under development. Official repository: Cloud9null/Soundly. Work is on `feat/ios-mvp` in draft PR #1; main is not overwritten or merged automatically.
 
-## Latest device preview — 0.8.0 (8)
+## Latest device preview — 0.9.0 (9)
 
-The [0.8 verification report](Documentation/PHASE-8.md) records the passing unsigned iPhone build and **96 unique tests** on source `69d07a04dcbb665e4b305663d40be024e90e1d4d`. The actual arm64 IPA was downloaded, archive-digest checked, inspected and saved for delivery. [Spanish quick guide](Documentation/0.8-GUIA.md).
+Now Playing preserves square artwork, refines native glass transport controls and adds smooth filled Wave/Mirror, rounded Bars and expanded gradient colors. [Verification and download](Documentation/PHASE-9.md) records the successful unsigned iPhone build and 97 unique tests. [Spanish update guide](Documentation/0.9-GUIA.md).
 
-Adds six local smart playlists and private per-track UTF-8 LRC/TXT lyrics with timed highlighting/line seeking, plus playlist error-reporting and system-duration refresh fixes. Smart rules describe library metadata; lyric timing follows the playback clock. There is no online lyrics lookup, embedded-lyrics extraction or custom-rule editor.
+The actual IPA was packaged and uploaded by GitHub CI. Final artifact bytes could not be locally inspected or copied for separate delivery after the session environment became unavailable; the GitHub artifact contains Soundly-unsigned.ipa. Earlier screenshots using the same production UI were reviewed. Physical device acceptance remains pending.
 
-Retains cached system artwork, honest signal-chain diagnostics, default-on integrity policy with optional five-band EQ, ordered manual playlists with Soundly JSON exchange, source-PCM envelope visualizer styles/colors, light/dark theme grouping and three selectable alternate icons (Aurora/Pulse/Orbit); Prism stays primary. Physical artwork/icon/route/bit identity and file-provider/lyrics acceptance require device tests. JSON exchange does not implement M3U; the visualizer is not a DAC measurement. The full product remains under development.
+Retains offline import/playback, honest Signal Path, integrity policy/EQ, smart/manual playlists, local LRC/TXT lyrics, themes and selectable alternate icons. Visualization describes source amplitudes before DSP, not DAC samples. The full product remains under development.
 
 ## Implemented
 

@@ -73,3 +73,10 @@ An iOS app target, importer, player and IPA are pending later phases.
 - Fixed playlist import success reporting after failed validation and Now Playing duration refresh after early artwork publication.
 - Preserved the existing library schema, bundle identifier, themes, icons and audio integrity policy.
 - Unsigned Release and 96 unique tests passed. The actual arm64 IPA, 48 offline PCM cases and native screenshot evidence were downloaded and checked; see PHASE-8.md. Physical DAC/system artwork and full lyrics-provider acceptance remain pending.
+
+## 0.9.0 preview — 2026-11-14
+
+- Preserved square, aspect-fit Now Playing artwork and refined top-aligned layout, glass Play/Pause and secondary controls.
+- Added smooth filled Wave/Mirror, rounded Bars and Amber/Rainbow gradients from real source PCM envelopes, with in-player settings and Reduce Motion handling.
+- Added a native long-title/enabled-waveform layout regression and varying-amplitude DEBUG PCM fixture; stabilized older mini-player/Settings UI waits.
+- Unsigned Release and 97 unique tests passed. GitHub produced the IPA artifact; final local artifact inspection was blocked by environment loss. See PHASE-9.md for exact evidence and download.

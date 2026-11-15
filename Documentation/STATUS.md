@@ -1,6 +1,6 @@
 # Verification and phase ledger
 
-Current verified preview: **0.8.0 (8)**. Source `69d07a04dcbb665e4b305663d40be024e90e1d4d` passed unsigned Release and 96 unique tests (25 domain, 48 app, 8 UI, 15 Python). The actual arm64 IPA was downloaded and inspected, including version/bundle, Mach-O iOS platform, alternate icons and DEBUG fixture exclusions. Smart lists and local LRC/TXT lyrics are implemented. See PHASE-8.md and 0.8-GUIA.md for exact evidence, scope and remaining physical acceptance. Earlier sections describe historical checkpoints.
+Current verified preview: **0.9.0 (9)**. Source 35df22b1fdb5206e346c31f93fccf0d945bfadd8 passed unsigned iPhone Release and 97 unique tests (25 domain, 48 app, 9 UI, 15 Python). GitHub packaged/uploaded the actual IPA in soundly-ios.zip. The final archive was not locally inspected after the execution environment became unavailable. Earlier matching-production-code player screenshots were reviewed. See PHASE-9.md for artifact, precise scope and remaining physical acceptance; 0.9-GUIA.md explains updating. Earlier sections are historical checkpoints.
 
 ## Phase 0
 
