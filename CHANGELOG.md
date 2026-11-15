@@ -80,3 +80,10 @@ An iOS app target, importer, player and IPA are pending later phases.
 - Added smooth filled Wave/Mirror, rounded Bars and Amber/Rainbow gradients from real source PCM envelopes, with in-player settings and Reduce Motion handling.
 - Added a native long-title/enabled-waveform layout regression and varying-amplitude DEBUG PCM fixture; stabilized older mini-player/Settings UI waits.
 - Unsigned Release and 97 unique tests passed. GitHub produced the IPA artifact; final local artifact inspection was blocked by environment loss. See PHASE-9.md for exact evidence and download.
+
+## 0.10.0 preview — 2026-11-15
+
+- Embedded whole-source waveforms and actual drag/accessible seeking inside a compact glass playback deck; refined playhead contrast and transport proportions.
+- Moved Library categories/playlists to a toolbar menu; simplified populated Home and song rows.
+- Added Signature, Glacier, Midnight, NeonS, Circuit and Hologram alternate icons, with native packaged-image checks and preview evidence.
+- Added standalone IPA upload before later test evidence. Final unsigned Release and all 97 unique tests passed; the actual IPA was downloaded and inspected. See PHASE-10.md for exact scope, hashes and physical limitations.

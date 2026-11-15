@@ -4,13 +4,13 @@
 
 Native iOS 26+ SwiftUI local music library and player under development. Official repository: Cloud9null/Soundly. Work is on `feat/ios-mvp` in draft PR #1; main is not overwritten or merged automatically.
 
-## Latest device preview — 0.9.0 (9)
+## Latest device preview — 0.10.0 (10)
 
-Now Playing preserves square artwork, refines native glass transport controls and adds smooth filled Wave/Mirror, rounded Bars and expanded gradient colors. [Verification and download](Documentation/PHASE-9.md) records the successful unsigned iPhone build and 97 unique tests. [Spanish update guide](Documentation/0.9-GUIA.md).
+The [0.10 verification report](Documentation/PHASE-10.md) records the passing unsigned iPhone build and 97 unique tests. The actual arm64 device IPA was downloaded, archive-digest checked, locally inspected and saved for standalone delivery. [Spanish update guide](Documentation/0.10-GUIA.md).
 
-The actual IPA was packaged by GitHub CI, then downloaded after environment recovery, archive-digest checked and locally inspected as an arm64 iPhoneOS 0.9.0/build 9 app. A standalone copy was delivered for personal Sideloadly signing. Physical device acceptance remains pending; see the verification report for exact hashes and scope.
+Integrates full-source PCM visualization and drag-to-seek into a native glass playback deck, with adaptive position indicator and cleaner transport. Library moves category/playlist navigation into a toolbar menu; loaded Home and song rows are quieter. Six original S/cyber icons join Prism/Aurora/Pulse/Orbit, giving ten selectable identities. Source waveforms are display-only and do not measure DAC output; actual audio processing is unchanged.
 
-Retains offline import/playback, honest Signal Path, integrity policy/EQ, smart/manual playlists, local LRC/TXT lyrics, themes and selectable alternate icons. Visualization describes source amplitudes before DSP, not DAC samples. The full product remains under development.
+Retains private offline import/playback, honest Signal Path, integrity policy/EQ, smart/manual playlists, local LRC/TXT lyrics and themes. Physical device/DAC acceptance, gapless, M3U and broader product scope remain pending.
 
 ## Implemented
 

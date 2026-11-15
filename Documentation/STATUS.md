@@ -1,6 +1,6 @@
 # Verification and phase ledger
 
-Current verified preview: **0.9.0 (9)**. Source 35df22b1fdb5206e346c31f93fccf0d945bfadd8 passed unsigned iPhone Release and 97 unique tests (25 domain, 48 app, 9 UI, 15 Python). After environment recovery, the actual archive was downloaded/digest-checked and the arm64 iPhoneOS IPA was extracted and inspected locally, then delivered separately. See PHASE-9.md for precise evidence/hashes and remaining physical acceptance. Earlier sections are historical checkpoints.
+Current verified preview: **0.10.0 (10)**. Source d300c9bf1a61b082467dd0de2005de9d63ab7f7f passed unsigned iPhone Release and 97 unique tests (25 domain, 48 app, 9 UI, 15 Python). The actual standalone IPA was downloaded/digest-checked and inspected, including platform/version, nine alternate icons and DEBUG exclusions. Integrated drag seeking, Library collection navigation and packaged icon images passed. See PHASE-10.md and 0.10-GUIA.md for exact evidence, hashes and remaining physical acceptance. Earlier sections are historical checkpoints.
 
 ## Phase 0
 

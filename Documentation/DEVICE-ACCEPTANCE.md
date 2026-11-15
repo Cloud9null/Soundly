@@ -34,3 +34,9 @@ Tap the quality badge in Now Playing, or open Signal Path from Settings. Compare
 With integer source files, the AVAudioFile processing format may be Float32. The conservative status can therefore say **Converted / Resampled** even if source/session rates match. Read the reason: a representation/width change does not itself prove resampling or loss of information. No current runtime status can grant Verified Bit-Perfect. Effective physical DAC bit depth, USB chip and complete supported-rate list remain unknown unless independently measured.
 
 For actual sample identity, follow AUDIO-VERIFICATION.md: capture digital output with suitable hardware, align without normalization/resampling, and compare decoded PCM samples. An analog recording, compressed FLAC hash, matching rates or an audible listening test is insufficient. Record results only for the exact tested configuration.
+
+## 0.10 interface acceptance
+
+- Library: open the toolbar grid menu to switch categories or enter Playlists/Smart Playlists; the old centered link stack is removed.
+- Now Playing: with a long title and Wave/Mirror/Bars enabled, verify the waveform lies within the glass playback block; drag near beginning/middle/end, pause/resume and compare elapsed time. Test VoiceOver five-second adjustment and large text. Off retains the seek rail.
+- Icons: Settings → Appearance → App Icon offers ten identities. Check each newly selected S/cyber icon on the actual Home Screen, including system tint/dark appearance behavior. Automated packaged-image tests do not establish physical SpringBoard switching.
