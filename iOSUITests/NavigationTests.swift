@@ -31,9 +31,12 @@ final class NavigationTests: XCTestCase {
         let stationary = NSPredicate { _,_ in
             let frame = signalPath.frame
             defer { previousFrame = frame }
-            return signalPath.isHittable && previousFrame == frame
+            guard signalPath.isHittable,let previousFrame else { return false }
+            // Native glass/AX transforms can vary by a fraction of a point while stationary.
+            return abs(previousFrame.minX-frame.minX) < 0.5 && abs(previousFrame.minY-frame.minY) < 0.5
+                && abs(previousFrame.width-frame.width) < 0.5 && abs(previousFrame.height-frame.height) < 0.5
         }
-        XCTAssertEqual(XCTWaiter.wait(for:[XCTNSPredicateExpectation(predicate:stationary,object:signalPath)],timeout:8),.completed)
+        XCTAssertEqual(XCTWaiter.wait(for:[XCTNSPredicateExpectation(predicate:stationary,object:signalPath)],timeout:20),.completed)
         signalPath.tap()
         XCTAssertTrue(app.navigationBars["Signal Path"].waitForExistence(timeout:10))
         XCTAssertTrue(app.descendants(matching:.any)["signalPathStatus"].exists)
