@@ -2,7 +2,7 @@ import XCTest
 @testable import SoundlyCore
 
 final class M3UTests:XCTestCase {
-    private let hash = String(repeating:"a",count:64)
+    private let referenceHash = String(repeating:"a",count:64)
     func testUnicodeWindowsPathsAndEXTINF() throws {
         let source = "\u{feff}#EXTM3U\r\n#EXTINF:123,Artista - Corazón 世界\r\nC:\\Music\\Corazón 世界.flac\r\n"
         let result = try M3U.parse(Data(source.utf8))
@@ -16,17 +16,17 @@ final class M3UTests:XCTestCase {
         XCTAssertEqual(value.entries.map(\.reference),["safe.flac","safe song.flac"])
     }
     func testHashRoundtripAndOrderedDeduplication() throws {
-        let entry = M3UEntry(reference:hash+".flac",title:"Artist - Song",duration:60,sha256:hash)
+        let entry = M3UEntry(reference:referenceHash+".flac",title:"Artist - Song",duration:60,sha256:referenceHash)
         let parsed = try M3U.parse(M3U.encode([entry,entry]))
         XCTAssertEqual(parsed.entries,[entry,entry])
-        let result = M3U.resolve(parsed.entries,catalog:[M3UCatalogItem(hash:hash,filename:hash+".flac",title:"Song",artist:"Artist")])
-        XCTAssertEqual(result.hashes,[hash]);XCTAssertEqual(result.duplicateCount,1)
+        let result = M3U.resolve(parsed.entries,catalog:[M3UCatalogItem(hash:referenceHash,filename:referenceHash+".flac",title:"Song",artist:"Artist")])
+        XCTAssertEqual(result.hashes,[referenceHash]);XCTAssertEqual(result.duplicateCount,1)
     }
     func testAmbiguousMetadataAndUnknownHashesStayUnresolved() {
         let second = String(repeating:"b",count:64)
-        let catalog = [M3UCatalogItem(hash:hash,filename:hash+".flac",title:"Song",artist:"Artist"),M3UCatalogItem(hash:second,filename:second+".flac",title:"Song",artist:"Artist")]
+        let catalog = [M3UCatalogItem(hash:referenceHash,filename:referenceHash+".flac",title:"Song",artist:"Artist"),M3UCatalogItem(hash:second,filename:second+".flac",title:"Song",artist:"Artist")]
         let ambiguous = M3UEntry(reference:"Song.flac",title:"Artist - Song")
-        let unknown = M3UEntry(reference:hash+".flac",title:"Artist - Song",sha256:String(repeating:"c",count:64))
+        let unknown = M3UEntry(reference:referenceHash+".flac",title:"Artist - Song",sha256:String(repeating:"c",count:64))
         let result = M3U.resolve([ambiguous,unknown],catalog:catalog)
         XCTAssertTrue(result.hashes.isEmpty);XCTAssertEqual(result.unresolved,[ambiguous,unknown]);XCTAssertEqual(result.ambiguousCount,1)
     }
