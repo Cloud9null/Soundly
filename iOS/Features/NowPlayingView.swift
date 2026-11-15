@@ -136,9 +136,9 @@ struct NowPlayingView: View {
                 let fraction = min(1,max(0,position/max(0.001,playback.audio.duration)))
                 ZStack(alignment:.leading) {
                     SourceVisualizer(progress:fraction)
-                    Capsule().fill(.primary.opacity(0.12)).frame(height:2)
-                    Capsule().fill(.primary.opacity(0.7)).frame(width:max(0,geometry.size.width*fraction),height:2)
-                    Circle().fill(.primary).frame(width:dragging ? 12 : 6,height:dragging ? 12 : 6)
+                    Capsule().fill(Color.primary.opacity(0.12)).frame(height:2)
+                    Capsule().fill(Color.primary.opacity(0.7)).frame(width:max(0,geometry.size.width*fraction),height:2)
+                    Circle().fill(Color.primary).frame(width:dragging ? 12 : 6,height:dragging ? 12 : 6)
                         .shadow(color:.black.opacity(0.12),radius:3,y:1)
                         .offset(x:max(0,min(geometry.size.width-6,geometry.size.width*fraction-3)))
                 }.frame(maxHeight:.infinity).contentShape(Rectangle())
