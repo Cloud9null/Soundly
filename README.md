@@ -4,13 +4,15 @@
 
 Native iOS 26+ SwiftUI local music library and player under development. Official repository: Cloud9null/Soundly. Work is on `feat/ios-mvp` in draft PR #1; main is not overwritten or merged automatically.
 
-## Latest device preview — 0.10.0 (10)
+## Latest device preview — 0.11.0 (11)
 
-The [0.10 verification report](Documentation/PHASE-10.md) records the passing unsigned iPhone build and 97 unique tests. The actual arm64 device IPA was downloaded, archive-digest checked, locally inspected and saved for standalone delivery. [Spanish update guide](Documentation/0.10-GUIA.md).
+The [0.11 verification report](Documentation/PHASE-11.md) records the passing unsigned iPhone Release, all 107 unique tests and inspected IPA hashes. [Spanish update guide](Documentation/0.11-GUIA.md).
 
-Integrates full-source PCM visualization and drag-to-seek into a native glass playback deck, with adaptive position indicator and cleaner transport. Library moves category/playlist navigation into a toolbar menu; loaded Home and song rows are quieter. Six original S/cyber icons join Prism/Aurora/Pulse/Orbit, giving ten selectable identities. Source waveforms are display-only and do not measure DAC output; actual audio processing is unchanged.
+Adds local M3U/M3U8 import with reviewed matching, retained ambiguous/missing references and retry; per-playlist UTF-8 M3U8 export and explicit system sharing of existing music copies. Playlist files do not include music and remote streams are not fetched. Existing JSON collections remain compatible. See the guide for matching, bounds and cross-player file placement.
 
-Retains private offline import/playback, honest Signal Path, integrity policy/EQ, smart/manual playlists, local LRC/TXT lyrics and themes. Physical device/DAC acceptance, gapless, M3U and broader product scope remain pending.
+Preserves the 0.10 full-source waveform/drag-to-seek inside a native glass playback deck, toolbar Library navigation, and ten selectable identities including S/cyber icons. Source visualization is display-only and does not measure DAC output; actual audio processing is unchanged.
+
+Retains private offline import/playback, honest Signal Path, integrity policy/EQ, smart/manual playlists, local LRC/TXT lyrics and themes. Physical device/DAC acceptance, gapless and broader product scope remain pending.
 
 ## Implemented
 
@@ -34,7 +36,7 @@ See [verification ledger](Documentation/STATUS.md), [architecture](Documentation
 
 Open `Soundly.xcodeproj`, select the shared Soundly scheme and an iOS 26+ destination, and build using Xcode 26.3. No third-party package installation is needed. Set your own team for device signing. Bundle ID defaults to `app.soundly.player` and can be overridden in Xcode or xcodebuild. No signing secrets are stored.
 
-`python3 Scripts/generate_project.py` regenerates the project deterministically after adding Swift source files. `swift test` runs the separate core package. The macOS iOS workflow builds unsigned arm64 Release, runs simulator app/integration/UI tests, then packages an unsigned IPA only if prior steps pass.
+`python3 Scripts/generate_project.py` regenerates the project deterministically after adding Swift source files. `swift test` runs the separate core package. The macOS iOS workflow builds unsigned arm64 Release and uploads a standalone unsigned IPA, then runs simulator app/integration/UI tests and uploads their evidence. Artifact availability alone does not establish passing tests.
 
 No accounts, application networking, analytics, advertising, external lookups or third-party runtime dependencies. A selected iCloud/File Provider source may need a download during import; completed private copies are offline. Imported copies/database are excluded from device backup: retain original music files.
 

@@ -87,3 +87,10 @@ An iOS app target, importer, player and IPA are pending later phases.
 - Moved Library categories/playlists to a toolbar menu; simplified populated Home and song rows.
 - Added Signature, Glacier, Midnight, NeonS, Circuit and Hologram alternate icons, with native packaged-image checks and preview evidence.
 - Added standalone IPA upload before later test evidence. Final unsigned Release and all 97 unique tests passed; the actual IPA was downloaded and inspected. See PHASE-10.md for exact scope, hashes and physical limitations.
+
+## 0.11.0 preview — 2026-11-15
+
+- Added bounded local M3U/M3U8 import with a review sheet, conservative matching and retained unresolved references with retry.
+- Added per-playlist UTF-8 M3U8 export and explicit system sharing of existing music files; no streaming/network fetching or automatic external-path reads.
+- Extended JSON with optional pending references while preserving older collections and validating changes before persistence.
+- Preserved the 0.10 glass player, integrated source waveform, icons, library schema and audio engine. Unsigned iPhone Release and all 107 unique tests passed; actual IPA downloaded and inspected. See PHASE-11.md for exact verification and remaining device/provider limitations.
