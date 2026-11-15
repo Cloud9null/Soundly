@@ -10,9 +10,19 @@ import XCTest
         XCTAssertTrue(app.navigationBars["Never played"].waitForExistence(timeout:5))
         app.staticTexts["Reference 1"].firstMatch.tap()
         let miniPlayer = app.buttons["miniPlayerOpen"];XCTAssertTrue(miniPlayer.waitForExistence(timeout:10))
-        let selected = NSPredicate(format:"value BEGINSWITH %@ AND hittable == true","Reference 1")
-        XCTAssertEqual(XCTWaiter.wait(for:[XCTNSPredicateExpectation(predicate:selected,object:miniPlayer)],timeout:10),.completed)
-        miniPlayer.coordinate(withNormalizedOffset:CGVector(dx:0.2,dy:0.5)).tap()
+        var openPoint:CGPoint?
+        let selected = NSPredicate { _,_ in
+            guard miniPlayer.exists,miniPlayer.isHittable,(miniPlayer.value as? String)?.hasPrefix("Reference 1") == true else { return false }
+            let frame = miniPlayer.frame;let window = app.frame
+            guard frame.minX.isFinite,frame.minY.isFinite,frame.width.isFinite,frame.height.isFinite,
+                  frame.width >= 44,frame.height >= 44,window.contains(frame) else { return false }
+            openPoint = CGPoint(x:frame.minX+frame.width*0.2-window.minX,y:frame.midY-window.minY)
+            return true
+        }
+        XCTAssertEqual(XCTWaiter.wait(for:[XCTNSPredicateExpectation(predicate:selected,object:miniPlayer)],timeout:20),.completed)
+        guard let openPoint else { return }
+        // Anchor to the stable app window: the native accessory can return a transient infinite AX frame.
+        app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:openPoint.x,dy:openPoint.y)).tap()
         XCTAssertTrue(app.buttons["playbackMenu"].waitForExistence(timeout:10))
         app.buttons["playbackMenu"].tap();app.buttons["Lyrics"].tap()
         XCTAssertTrue(app.navigationBars["Lyrics"].waitForExistence(timeout:5))
