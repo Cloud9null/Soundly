@@ -5,7 +5,7 @@ struct AppIconSettingsView:View {
     @State private var selected = UIApplication.shared.alternateIconName
     @State private var changing = false
     @State private var message:String?
-    private let choices = ["Prism","Aurora","Pulse","Orbit"]
+    private let choices = ["Prism","Signature","Glacier","Midnight","NeonS","Circuit","Hologram","Aurora","Pulse","Orbit"]
     var body:some View {
         List {
             Section {
@@ -16,7 +16,7 @@ struct AppIconSettingsView:View {
                                 if let image = primaryImage { Image(uiImage:image).resizable().frame(width:64,height:64).clipShape(RoundedRectangle(cornerRadius:14)) }
                                 else { Image(systemName:"play.fill").frame(width:64,height:64).background(.tint.opacity(0.1),in:RoundedRectangle(cornerRadius:14)) }
                             } else { Image("IconPreview-"+name).resizable().frame(width:64,height:64).clipShape(RoundedRectangle(cornerRadius:14)) }
-                            Text(name).foregroundStyle(.primary);Spacer()
+                            VStack(alignment:.leading,spacing:4) { Text(name).foregroundStyle(.primary);Text(["NeonS","Circuit","Hologram"].contains(name) ? "Cyber collection" : (["Signature","Glacier","Midnight"].contains(name) ? "S monogram" : "Original collection")).font(.caption).foregroundStyle(.secondary) };Spacer()
                             if selected == (name == "Prism" ? nil : "AppIcon-"+name) { Image(systemName:"checkmark.circle.fill").foregroundStyle(.tint) }
                         }.padding(.vertical,4).contentShape(Rectangle())
                     }.buttonStyle(.plain).disabled(changing || !UIApplication.shared.supportsAlternateIcons)

@@ -31,6 +31,18 @@ jobs:
           python3 Scripts/audio_reference.py generate build/reference-pcm
       - name: Device build (unsigned)
         run: xcodebuild -project Soundly.xcodeproj -scheme Soundly -configuration Release -destination 'generic/platform=iOS' -derivedDataPath build/device CODE_SIGNING_ALLOWED=NO build
+      - name: Package device build for later signing (not an installation test)
+        run: |
+          mkdir -p build/ipa/Payload
+          cp -R build/device/Build/Products/Release-iphoneos/Soundly.app build/ipa/Payload/
+          cd build/ipa
+          zip -qr ../Soundly-unsigned.ipa Payload
+      - name: Upload standalone unsigned device IPA
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: soundly-ipa
+          path: build/Soundly-unsigned.ipa
+          retention-days: 3
       - name: Select available iOS 26 simulator
         run: |
           python3 - <<'PY'
@@ -42,12 +54,6 @@ jobs:
           PY
       - name: App integration and UI tests
         run: xcodebuild -project Soundly.xcodeproj -scheme Soundly -configuration Debug -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -derivedDataPath build/simulator -resultBundlePath build/Tests.xcresult CODE_SIGNING_ALLOWED=NO test
-      - name: Package device build for later signing (not an installation test)
-        run: |
-          mkdir -p build/ipa/Payload
-          cp -R build/device/Build/Products/Release-iphoneos/Soundly.app build/ipa/Payload/
-          cd build/ipa
-          zip -qr ../Soundly-unsigned.ipa Payload
       - name: Export native screenshots and matrix evidence from actual tests
         if: always() && !cancelled()
         continue-on-error: true
@@ -64,7 +70,6 @@ jobs:
         with:
           name: soundly-ios
           path: |
-            build/Soundly-unsigned.ipa
             build/Tests.xcresult
             build/Attachments
             build/reference-pcm

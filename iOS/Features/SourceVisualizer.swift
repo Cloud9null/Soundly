@@ -20,13 +20,11 @@ enum SourceEnvelope {
     }
 }
 struct SourceVisualizer:View {
+    var progress:Double = 0
     @Environment(PlaybackController.self) private var playback
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage("visualizerStyle") private var style = "Off"
     @AppStorage("visualizerColor") private var tint = "Mint"
     @State private var samples:[Float] = []
-    @State private var note = ""
-    @State private var clock = Date()
     private var colors:[Color] {
         switch tint {
         case "Rose": [.pink,.purple]
@@ -37,90 +35,56 @@ struct SourceVisualizer:View {
         }
     }
     var body:some View {
-        if style != "Off" {
-            VStack(spacing:4) {
-                TimelineView(.animation(minimumInterval:1.0/30,paused:!playback.audio.playing || reduceMotion)) { timeline in
-                    Canvas { context,size in
-                        guard !samples.isEmpty else { return }
-                        let extra = playback.audio.playing && !reduceMotion ? min(0.3,max(0,timeline.date.timeIntervalSince(clock))) : 0
-                        let seconds = playback.audio.elapsed+extra
-                        let count = 80
-                        let duration = max(1,playback.audio.duration)
-                        let values:[CGFloat] = (0..<count).map { i in
-                            let time = seconds+(Double(i)/Double(count-1)-0.5)*8
-                            guard time >= 0 && time <= duration else { return 0 }
-                            let index = min(samples.count-1,Int(time/duration*Double(samples.count-1)))
-                            let lo = max(0,index-2);let hi = min(samples.count-1,index+2)
-                            let average = samples[lo...hi].reduce(Float(0),+)/Float(hi-lo+1)
-                            return CGFloat(sqrt(max(0,min(1,average))))
-                        }
-                        let gradient = GraphicsContext.Shading.linearGradient(Gradient(colors:colors),startPoint:.zero,endPoint:CGPoint(x:size.width,y:0))
-                        let middle = size.height/2
-                        if style == "Bars" {
-                            for i in stride(from:0,to:count,by:2) {
-                                let height = max(2,values[i]*(size.height-6))
-                                let rect = CGRect(x:CGFloat(i)*size.width/CGFloat(count),y:(size.height-height)/2,width:max(2,size.width/CGFloat(count)*1.1),height:height)
-                                context.fill(Path(roundedRect:rect,cornerRadius:3),with:gradient)
-                            }
-                        } else if style == "Orbit" {
-                            var ring = Path()
-                            for i in 0..<count {
-                                let angle = Double(i)*2*Double.pi/Double(count)
-                                let radius = size.height*0.28+values[i]*size.height*0.17
-                                let point = CGPoint(x:size.width/2+CGFloat(cos(angle))*radius,y:middle+CGFloat(sin(angle))*radius)
-                                if i == 0 { ring.move(to:point) } else { ring.addLine(to:point) }
-                            }
-                            ring.closeSubpath();context.stroke(ring,with:gradient,style:StrokeStyle(lineWidth:1.6,lineJoin:.round))
-                        } else {
-                            func curve(_ sign:CGFloat)->Path {
-                                var path = Path();var previous = CGPoint(x:0,y:middle+sign*values[0]*(middle-3))
-                                path.move(to:previous)
-                                for i in 1..<count {
-                                    let point = CGPoint(x:CGFloat(i)*size.width/CGFloat(count-1),y:middle+sign*values[i]*(middle-3))
-                                    let mid = (previous.x+point.x)/2
-                                    path.addCurve(to:point,control1:CGPoint(x:mid,y:previous.y),control2:CGPoint(x:mid,y:point.y));previous = point
-                                }
-                                return path
-                            }
-                            let top = curve(-1)
-                            var fill = top
-                            fill.addLine(to:CGPoint(x:size.width,y:middle));fill.addLine(to:CGPoint(x:0,y:middle));fill.closeSubpath()
-                            context.opacity = 0.16;context.fill(fill,with:gradient);context.opacity = 1
-                            context.stroke(top,with:gradient,style:StrokeStyle(lineWidth:1.8,lineCap:.round,lineJoin:.round))
-                            if style == "Mirror" {
-                                let bottom = curve(1);var lower = bottom
-                                lower.addLine(to:CGPoint(x:size.width,y:middle));lower.addLine(to:CGPoint(x:0,y:middle));lower.closeSubpath()
-                                context.opacity = 0.16;context.fill(lower,with:gradient);context.opacity = 0.8
-                                context.stroke(bottom,with:gradient,style:StrokeStyle(lineWidth:1.5,lineCap:.round,lineJoin:.round))
-                            }
-                        }
-                    }.frame(height:52).accessibilityElement(children:.ignore)
-                        .accessibilityLabel("Source PCM amplitude envelope, before DSP")
-                        .accessibilityIdentifier("sourceVisualizer")
-                }
-                HStack {
-                    Text(samples.isEmpty ? note : "SOURCE WAVEFORM").font(.system(size:8,weight:.medium)).tracking(1.4).foregroundStyle(.secondary)
-                    Spacer()
-                    Menu {
-                        Picker("Style",selection:$style) { ForEach(["Off","Wave","Mirror","Bars","Orbit"],id:\.self) { Text($0) } }
-                        Picker("Color",selection:$tint) { ForEach(["Mint","Rose","Ocean","Amber","Rainbow"],id:\.self) { Text($0) } }
-                        Text("Source amplitude before DSP. Not a DAC measurement.")
-                    } label: { Image(systemName:"slider.horizontal.3").font(.caption).frame(width:44,height:44) }
-                        .accessibilityLabel("Visualizer style and color")
-                }.frame(height:16)
-            }.accessibilityHint("Display only. Source PCM before audio processing, not output verification.")
-            .onChange(of:playback.audio.elapsed) { clock = Date() }
-            .task(id:"\(playback.current?.id.uuidString ?? "")-\(style == "Off")") {
-                samples = [];guard let track = playback.current else { return };note = "ANALYZING SOURCE"
-                let work = Task.detached { ()throws->[Float] in
-                    let root = try LibraryPaths.directory("Music")
-                    return try SourceEnvelope.analyze(PrivateMusicFile.url(track.filename,in:root))
-                }
-                do {
-                    let values = try await withTaskCancellationHandler(operation:{try await work.value},onCancel:{work.cancel()})
-                    guard !Task.isCancelled else { return };samples = values;note = "SOURCE WAVEFORM"
-                } catch { if !Task.isCancelled { note = "SOURCE ANALYSIS UNAVAILABLE" } }
+        Canvas { context,size in
+            guard style != "Off",!samples.isEmpty else { return }
+            let count = 96
+            let values:[CGFloat] = (0..<count).map { i in
+                let lo = i*samples.count/count
+                let hi = max(lo+1,(i+1)*samples.count/count)
+                let values = samples[min(lo,samples.count-1)..<min(hi,samples.count)]
+                let average = values.reduce(Float(0),+)/Float(max(1,values.count))
+                return CGFloat(sqrt(max(0,min(1,average))))
             }
+            let shading = GraphicsContext.Shading.linearGradient(Gradient(colors:colors),startPoint:.zero,endPoint:CGPoint(x:size.width,y:0))
+            var base = context;base.opacity = 0.22
+            Self.draw(&base,size:size,values:values,style:style,shading:shading)
+            var played = context
+            played.clip(to:Path(CGRect(x:0,y:0,width:size.width*min(1,max(0,progress)),height:size.height)))
+            Self.draw(&played,size:size,values:values,style:style,shading:shading)
+        }.accessibilityHidden(true)
+        .task(id:"\(playback.current?.id.uuidString ?? "")-\(style == "Off")") {
+            samples = [];guard style != "Off",let track = playback.current else { return }
+            let work = Task.detached { ()throws->[Float] in
+                let root = try LibraryPaths.directory("Music")
+                return try SourceEnvelope.analyze(PrivateMusicFile.url(track.filename,in:root))
+            }
+            do {
+                let values = try await withTaskCancellationHandler(operation:{try await work.value},onCancel:{work.cancel()})
+                guard !Task.isCancelled else { return };samples = values
+            } catch { /* Keep the functional seek rail when source analysis is unavailable. */ }
+        }
+    }
+    private static func draw(_ context:inout GraphicsContext,size:CGSize,values:[CGFloat],style:String,shading:GraphicsContext.Shading) {
+        let middle = size.height/2
+        if style == "Bars" || style == "Orbit" {
+            for i in stride(from:0,to:values.count,by:2) {
+                let h = max(2,values[i]*(size.height-8))
+                let rect = CGRect(x:CGFloat(i)*size.width/CGFloat(values.count),y:(size.height-h)/2,width:max(2,size.width/CGFloat(values.count)),height:h)
+                context.fill(Path(roundedRect:rect,cornerRadius:2),with:shading)
+            }
+            return
+        }
+        let signs:[CGFloat] = style == "Wave" ? [-1] : [-1,1]
+        for sign in signs {
+            var line = Path();var previous = CGPoint(x:0,y:middle+sign*values[0]*(middle-4));line.move(to:previous)
+            for i in 1..<values.count {
+                let point = CGPoint(x:CGFloat(i)*size.width/CGFloat(values.count-1),y:middle+sign*values[i]*(middle-4))
+                let x = (previous.x+point.x)/2
+                line.addCurve(to:point,control1:CGPoint(x:x,y:previous.y),control2:CGPoint(x:x,y:point.y));previous = point
+            }
+            var fill = line;fill.addLine(to:CGPoint(x:size.width,y:middle));fill.addLine(to:CGPoint(x:0,y:middle));fill.closeSubpath()
+            var soft = context;soft.opacity *= 0.18;soft.fill(fill,with:shading)
+            context.stroke(line,with:shading,style:StrokeStyle(lineWidth:1.3,lineCap:.round,lineJoin:.round))
         }
     }
 }
@@ -129,9 +93,9 @@ struct VisualizerSettingsView:View {
     @AppStorage("visualizerColor") private var tint = "Mint"
     var body:some View {
         Form {
-            Picker("Style",selection:$style) { ForEach(["Off","Wave","Mirror","Bars","Orbit"],id:\.self) { Text($0) } }
+            Picker("Seek waveform",selection:$style) { ForEach(["Off","Wave","Mirror","Bars","Orbit"],id:\.self) { Text($0 == "Orbit" ? "Bars (legacy Orbit)" : $0) } }
             Picker("Color",selection:$tint) { ForEach(["Mint","Rose","Ocean","Amber","Rainbow"],id:\.self) { Text($0) } }
-            Text("A smoothed amplitude envelope from real source PCM, displayed around the playback position with a visual square-root scale. Before DSP; not a spectrum or DAC measurement. Optional background decoding, Off by default. Reduce Motion disables interpolated redraws.").font(.footnote)
+            Text("The waveform is embedded in the seek rail inside the playback controls. Drag anywhere on it to seek. It represents the full source file, before DSP, with a square-root display scale; it is not a DAC measurement. Off keeps the seek rail without source analysis. Legacy Orbit uses bars in the seek rail.").font(.footnote)
         }.navigationTitle("Visualizer").soundlySurface()
     }
 }

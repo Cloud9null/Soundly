@@ -14,9 +14,10 @@ final class ExpansionTests:XCTestCase {
     @MainActor func testAlternateIconsArePackaged() throws {
         let icons = try XCTUnwrap(Bundle.main.infoDictionary?["CFBundleIcons"] as? [String:Any])
         let alternatives = try XCTUnwrap(icons["CFBundleAlternateIcons"] as? [String:Any])
-        for name in ["Aurora","Pulse","Orbit"] {
+        for name in ["Aurora","Pulse","Orbit","Signature","Glacier","NeonS","Circuit","Hologram","Midnight"] {
             XCTAssertNotNil(alternatives["AppIcon-"+name])
-            XCTAssertNotNil(UIImage(named:"IconPreview-"+name))
+            let preview = try XCTUnwrap(UIImage(named:"IconPreview-"+name))
+            let attachment = XCTAttachment(image:preview);attachment.name = "App icon — "+name;attachment.lifetime = .keepAlways;add(attachment)
         }
     }
     func testIntegrityOverridesEQAndMalformedGainsAreClamped() {

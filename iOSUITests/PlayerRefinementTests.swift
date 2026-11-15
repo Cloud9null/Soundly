@@ -51,10 +51,17 @@ import XCTest
         XCTAssertTrue(cover.waitForExistence(timeout:10))
         XCTAssertEqual(cover.frame.width,cover.frame.height,accuracy:1)
         XCTAssertGreaterThanOrEqual(cover.frame.minY,app.buttons["nowPlayingDone"].frame.maxY)
-        XCTAssertTrue(app.descendants(matching:.any)["sourceVisualizer"].waitForExistence(timeout:30))
+        XCTAssertTrue(app.descendants(matching:.any)["waveformScrubber"].waitForExistence(timeout:30))
         let pause = app.buttons["transportToggle"];if pause.label == "Pause" { pause.tap() }
         assertFooter(app)
-        capture(app,"Refined glass player with source mirror waveform")
+        let scrubber = app.descendants(matching:.any)["waveformScrubber"]
+        let deck = app.descendants(matching:.any)["playbackDeck"]
+        XCTAssertGreaterThanOrEqual(scrubber.frame.minY,deck.frame.minY)
+        XCTAssertLessThanOrEqual(scrubber.frame.maxY,deck.frame.maxY)
+        scrubber.coordinate(withNormalizedOffset:CGVector(dx:0.2,dy:0.5)).press(forDuration:0.1,thenDragTo:scrubber.coordinate(withNormalizedOffset:CGVector(dx:0.6,dy:0.5)))
+        let sought = NSPredicate(format:"value BEGINSWITH %@","0:3")
+        XCTAssertEqual(XCTWaiter.wait(for:[XCTNSPredicateExpectation(predicate:sought,object:scrubber)],timeout:10),.completed)
+        capture(app,"Integrated waveform seek rail and glass playback deck")
     }
     func testDuplicateScanReviewAndRemoval() {
         let app = XCUIApplication(); app.launchArguments = ["--soundly-fixtures","--soundly-duplicates"]; app.launch()

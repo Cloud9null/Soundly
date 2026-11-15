@@ -35,14 +35,16 @@ struct NowPlayingView: View {
                         .accessibilityIdentifier("expandArtwork").disabled(playback.current == nil)
                         .padding(.bottom,22)
                     trackInformation
-                    SourceVisualizer().padding(.top,visualizerStyle == "Off" ? 0 : 14)
-                    progress.padding(.top,16)
-                    transport.padding(.top,12)
-                    HStack(spacing:12) {
-                        Image(systemName:"speaker.fill")
-                        SystemVolumeControl().frame(height:32).accessibilityLabel("System volume")
-                        Image(systemName:"speaker.wave.3.fill")
-                    }.font(.caption).foregroundStyle(.secondary).padding(.top,10)
+                    VStack(spacing:16) {
+                        progress
+                        transport
+                        HStack(spacing:12) {
+                            Image(systemName:"speaker.fill")
+                            SystemVolumeControl().frame(height:32).accessibilityLabel("System volume")
+                            Image(systemName:"speaker.wave.3.fill")
+                        }.font(.caption).foregroundStyle(.secondary)
+                    }.padding(18).glassEffect(in:RoundedRectangle(cornerRadius:26))
+                        .accessibilityElement(children:.contain).accessibilityIdentifier("playbackDeck").padding(.top,18)
                     if let error = playback.error { Text(error).font(.footnote).foregroundStyle(.red).padding(.top,12) }
                 }.frame(maxWidth:520).padding(.horizontal,28).padding(.top,18).padding(.bottom,24)
                     .frame(maxWidth:.infinity,minHeight:geometry.size.height,alignment:.top)
@@ -77,7 +79,7 @@ struct NowPlayingView: View {
     }
     private func coverSize(_ size:CGSize)->CGFloat {
         if textSize.isAccessibilitySize { return min(180,max(100,size.width*0.45)) }
-        return max(120,min(min(size.width-56,max(120,size.height-(visualizerStyle == "Off" ? 350 : 420))),440))
+        return max(120,min(min(size.width-56,max(120,size.height-360)),440))
     }
     private var ambient:some View {
         GeometryReader { geometry in
@@ -129,13 +131,34 @@ struct NowPlayingView: View {
         }
     }
     private var progress:some View {
-        VStack(spacing:4) {
-            Slider(value:$position,in:0...max(1,playback.audio.duration)) { editing in
-                dragging = editing; if !editing { playback.seek(position) }
-            }.tint(.primary).accessibilityLabel("Playback position").disabled(playback.busy || playback.current == nil)
+        VStack(spacing:6) {
+            GeometryReader { geometry in
+                let fraction = min(1,max(0,position/max(1,playback.audio.duration)))
+                ZStack(alignment:.leading) {
+                    SourceVisualizer(progress:fraction)
+                    Capsule().fill(.primary.opacity(0.12)).frame(height:2)
+                    Capsule().fill(.primary.opacity(0.7)).frame(width:max(0,geometry.size.width*fraction),height:2)
+                    Circle().fill(.primary).frame(width:dragging ? 12 : 6,height:dragging ? 12 : 6)
+                        .shadow(color:.black.opacity(0.12),radius:3,y:1)
+                        .offset(x:max(0,min(geometry.size.width-6,geometry.size.width*fraction-3)))
+                }.frame(maxHeight:.infinity).contentShape(Rectangle())
+                    .gesture(DragGesture(minimumDistance:0).onChanged { value in
+                        guard playback.current != nil,!playback.busy else { return };dragging = true
+                        position = min(max(0,value.location.x/max(1,geometry.size.width)),1)*max(0,playback.audio.duration)
+                    }.onEnded { _ in
+                        guard dragging else { return };playback.seek(position);dragging = false
+                    })
+            }.frame(height:44).accessibilityElement(children:.ignore)
+                .accessibilityLabel("Playback position").accessibilityValue(Self.time(position)+" of "+Self.time(playback.audio.duration))
+                .accessibilityIdentifier("waveformScrubber")
+                .accessibilityAdjustableAction { direction in
+                    guard playback.current != nil,!playback.busy else { return }
+                    let step:Double
+                    switch direction { case .increment: step = 5; case .decrement: step = -5; @unknown default: return }
+                    position = max(0,min(playback.audio.duration,position+step));playback.seek(position)
+                }
             HStack {
-                Text(Self.time(position)); Spacer()
-                Text("−"+Self.time(max(0,playback.audio.duration-position)))
+                Text(Self.time(position));Spacer();Text("−"+Self.time(max(0,playback.audio.duration-position)))
             }.font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
         }
     }
@@ -144,7 +167,7 @@ struct NowPlayingView: View {
             Spacer()
             Button { playback.previous() } label: { Image(systemName:"backward.end.fill").font(.system(size:25,weight:.semibold)).frame(width:64,height:64).contentShape(Rectangle()) }.accessibilityLabel("Previous")
             Spacer()
-            Button { playback.toggle() } label: { Image(systemName:playback.audio.playing ? "pause.fill" : "play.fill").font(.system(size:30,weight:.semibold)).offset(x:playback.audio.playing ? 0 : 2).frame(width:76,height:76).contentShape(Circle()).glassEffect(in:.circle) }.accessibilityLabel(playback.audio.playing ? "Pause" : "Play").accessibilityIdentifier("transportToggle")
+            Button { playback.toggle() } label: { Image(systemName:playback.audio.playing ? "pause.fill" : "play.fill").font(.system(size:32,weight:.semibold)).offset(x:playback.audio.playing ? 0 : 2).frame(width:64,height:64).contentShape(Circle()) }.accessibilityLabel(playback.audio.playing ? "Pause" : "Play").accessibilityIdentifier("transportToggle")
             Spacer()
             Button { playback.next() } label: { Image(systemName:"forward.end.fill").font(.system(size:25,weight:.semibold)).frame(width:64,height:64).contentShape(Rectangle()) }.accessibilityLabel("Next")
             Spacer()

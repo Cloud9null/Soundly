@@ -4,7 +4,7 @@ import XCTest
     func testSmartQueueAndOfflineLyricsMenu() {
         let app = XCUIApplication();app.launchArguments = ["--soundly-fixtures"];app.launch()
         XCTAssertTrue(app.navigationBars["Listen"].waitForExistence(timeout:30))
-        app.tabBars.buttons["Library"].tap();app.buttons["Smart Playlists"].tap()
+        app.tabBars.buttons["Library"].tap();app.buttons["libraryBrowse"].tap();app.buttons["Smart Playlists"].tap()
         XCTAssertTrue(app.navigationBars["Smart Playlists"].waitForExistence(timeout:5))
         let rule = app.buttons["smartRule-Never played"];XCTAssertTrue(rule.waitForExistence(timeout:5));rule.tap()
         XCTAssertTrue(app.navigationBars["Never played"].waitForExistence(timeout:5))
@@ -22,7 +22,7 @@ import XCTest
     func testPlaylistCreationTrackSelectionAndPersistence() {
         let app = XCUIApplication(); app.launchArguments = ["--soundly-fixtures"]; app.launch()
         XCTAssertTrue(app.navigationBars["Listen"].waitForExistence(timeout:30))
-        app.tabBars.buttons["Library"].tap(); app.buttons["Playlists"].tap()
+        app.tabBars.buttons["Library"].tap(); app.buttons["libraryBrowse"].tap(); app.buttons["Playlists"].tap()
         let name = "Travel-"+String(UUID().uuidString.prefix(6))
         app.textFields["playlistName"].tap(); app.textFields["playlistName"].typeText(String(name))
         app.buttons["createPlaylist"].tap(); app.buttons[String(name)].tap()
@@ -30,7 +30,7 @@ import XCTest
         app.buttons.containing(NSPredicate(format:"label CONTAINS %@","Reference 1")).firstMatch.tap()
         XCTAssertTrue(app.staticTexts.containing(NSPredicate(format:"label CONTAINS[c] %@","Tracks · 1")).firstMatch.exists)
         app.terminate(); app.launch(); XCTAssertTrue(app.navigationBars["Listen"].waitForExistence(timeout:30))
-        app.tabBars.buttons["Library"].tap(); app.buttons["Playlists"].tap()
+        app.tabBars.buttons["Library"].tap(); app.buttons["libraryBrowse"].tap(); app.buttons["Playlists"].tap()
         XCTAssertTrue(app.buttons[String(name)].waitForExistence(timeout:5))
     }
 }

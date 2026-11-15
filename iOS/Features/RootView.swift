@@ -64,10 +64,20 @@ struct HomeView: View {
         ScrollView {
             VStack(alignment:.leading,spacing:28) {
                 VStack(alignment:.leading,spacing:12) {
-                    Text("SOUNDLY").font(.caption.weight(.bold)).tracking(4).foregroundStyle(.tint)
-                    Text("A space for\nyour sound.").font(.largeTitle.bold())
-                    Text("Your music. Your files. Your sound.").foregroundStyle(.secondary)
-                    AddMusicButton().buttonStyle(.glass).controlSize(.large)
+                    if songs.isEmpty {
+                        Text("SOUNDLY").font(.caption.weight(.bold)).tracking(4).foregroundStyle(.tint)
+                        Text("A space for\nyour sound.").font(.largeTitle.bold())
+                        Text("Your music. Your files. Your sound.").foregroundStyle(.secondary)
+                        AddMusicButton().buttonStyle(.glass).controlSize(.large)
+                    } else {
+                        HStack {
+                            VStack(alignment:.leading,spacing:5) {
+                                Text("Made for your music.").font(.title2.weight(.semibold))
+                                Text("\(songs.count) songs, always yours.").font(.subheadline).foregroundStyle(.secondary)
+                            }
+                            Spacer();AddMusicButton().buttonStyle(.glass)
+                        }
+                    }
                 }.frame(maxWidth:.infinity,alignment:.leading).padding(.vertical,12)
                 if songs.isEmpty {
                     ContentUnavailableView("Make yourself at home",systemImage:"opticaldisc",description:Text("Import files or a folder to build your offline library."))
@@ -113,16 +123,24 @@ struct LibraryView: View {
     @State private var newest = false
     var body: some View {
         VStack(spacing:0) {
-            Picker("Browse by",selection:$mode) {
-                ForEach(["Songs","Albums","Artists","Album Artists","Genres","Composers","Folders"],id:\.self) { Text($0) }
-            }.pickerStyle(.menu).padding(.horizontal)
-            NavigationLink("Playlists",destination:PlaylistsView()).padding(.vertical,8)
-            NavigationLink("Smart Playlists",destination:SmartPlaylistsView()).padding(.bottom,8)
             SongResults(search:search,mode:mode,favorites:favorites,newest:newest,select:select)
             ImportStatusView().padding(.horizontal)
         }.soundlySurface().navigationTitle("Library").searchable(text:$search,prompt:"Songs, artists or albums")
         .toolbar {
             ToolbarItem(placement:.topBarLeading) {
+                Menu("Browse library",systemImage:"square.grid.2x2") {
+                    Section("Browse") {
+                        Picker("Category",selection:$mode) {
+                            ForEach(["Songs","Albums","Artists","Album Artists","Genres","Composers","Folders"],id:\.self) { Text($0) }
+                        }
+                    }
+                    Section("Collections") {
+                        NavigationLink("Playlists",destination:PlaylistsView())
+                        NavigationLink("Smart Playlists",destination:SmartPlaylistsView())
+                    }
+                }.accessibilityIdentifier("libraryBrowse")
+            }
+            ToolbarItem(placement:.topBarTrailing) {
                 Menu("Filter",systemImage:"line.3.horizontal.decrease") {
                     Toggle("Favorites only",isOn:$favorites)
                     Toggle("Recently added first",isOn:$newest)
@@ -178,11 +196,11 @@ struct SongResults: View {
         Button { select(song) } label: {
             HStack(spacing:12) {
                 if let number { Text("\(number)").font(.caption.monospacedDigit()).foregroundStyle(.secondary).frame(minWidth:24) }
-                CoverView(artwork:song.artwork)
+                CoverView(artwork:song.artwork,size:52,cornerRadius:10)
                 VStack(alignment:.leading,spacing:4) {
                     Text(song.title).foregroundStyle(.primary).lineLimit(1)
                     Text(song.artist + " · " + song.album).font(.caption).foregroundStyle(.secondary).lineLimit(1)
-                    Text(song.available ? song.quality : "Local file missing").font(.caption2).foregroundStyle(.secondary)
+                    if !song.available { Text("Local file missing").font(.caption2).foregroundStyle(.secondary) }
                 }
                 Spacer(); if song.favorite { Image(systemName:"heart.fill").foregroundStyle(.tint) }
             }.padding(.vertical,4)
@@ -304,7 +322,7 @@ struct SettingsView: View {
                 Text("Music stays on this device. No external artwork or metadata lookups. Imported music is excluded from device backups; keep your original files.").font(.footnote)
             }
             Section("About") {
-                LabeledContent("Version",value:"0.9.0 (9)")
+                LabeledContent("Version",value:"0.10.0 (10)")
                 Text("Built with Apple frameworks. No third-party runtime code.")
             }
         }.soundlySurface().navigationTitle("Settings")

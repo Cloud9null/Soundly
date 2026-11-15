@@ -334,7 +334,7 @@
 "buildActionMask" = "2147483647";
 "files" = ();
 "inputPaths" = ("$(SRCROOT)/Brand/Prism-master.png","$(SRCROOT)/Brand/GenerateAlternates.swift");
-"outputPaths" = ("$(SRCROOT)/iOS/Resources/Assets.xcassets/AppIcon.appiconset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/AppIcon-Aurora.appiconset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/IconPreview-Aurora.imageset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/AppIcon-Pulse.appiconset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/IconPreview-Pulse.imageset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/AppIcon-Orbit.appiconset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/IconPreview-Orbit.imageset/Icon.png");
+"outputPaths" = ("$(SRCROOT)/iOS/Resources/Assets.xcassets/AppIcon.appiconset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/AppIcon-Aurora.appiconset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/IconPreview-Aurora.imageset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/AppIcon-Pulse.appiconset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/IconPreview-Pulse.imageset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/AppIcon-Orbit.appiconset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/IconPreview-Orbit.imageset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/AppIcon-Signature.appiconset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/IconPreview-Signature.imageset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/AppIcon-Glacier.appiconset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/IconPreview-Glacier.imageset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/AppIcon-NeonS.appiconset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/IconPreview-NeonS.imageset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/AppIcon-Circuit.appiconset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/IconPreview-Circuit.imageset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/AppIcon-Hologram.appiconset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/IconPreview-Hologram.imageset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/AppIcon-Midnight.appiconset/Icon.png","$(SRCROOT)/iOS/Resources/Assets.xcassets/IconPreview-Midnight.imageset/Icon.png");
 "runOnlyForDeploymentPostprocessing" = "0";
 "shellPath" = "/bin/sh";
 "shellScript" = "set -eu\n/usr/bin/xcrun --sdk macosx swift -sdk \"$(/usr/bin/xcrun --sdk macosx --show-sdk-path)\" \"$SRCROOT/Brand/GenerateAlternates.swift\" \"$SRCROOT/iOS/Resources/Assets.xcassets\"\n/usr/bin/sips -z 1024 1024 \"$SRCROOT/Brand/Prism-master.png\" --out \"$SRCROOT/iOS/Resources/Assets.xcassets/AppIcon.appiconset/Icon.png\" >/dev/null\n";
@@ -358,9 +358,9 @@
 "INFOPLIST_FILE" = "iOS/Resources/Info.plist";
 "ENABLE_USER_SCRIPT_SANDBOXING" = "NO";
 "ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
-"ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES" = ("AppIcon-Aurora","AppIcon-Pulse","AppIcon-Orbit");
-"MARKETING_VERSION" = "0.9.0";
-"CURRENT_PROJECT_VERSION" = "9";
+"ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES" = ("AppIcon-Aurora","AppIcon-Pulse","AppIcon-Orbit","AppIcon-Signature","AppIcon-Glacier","AppIcon-NeonS","AppIcon-Circuit","AppIcon-Hologram","AppIcon-Midnight");
+"MARKETING_VERSION" = "0.10.0";
+"CURRENT_PROJECT_VERSION" = "10";
 };
 };
 "62BC06C1F823C5910A16E306" = {
@@ -381,9 +381,9 @@
 "INFOPLIST_FILE" = "iOS/Resources/Info.plist";
 "ENABLE_USER_SCRIPT_SANDBOXING" = "NO";
 "ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
-"ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES" = ("AppIcon-Aurora","AppIcon-Pulse","AppIcon-Orbit");
-"MARKETING_VERSION" = "0.9.0";
-"CURRENT_PROJECT_VERSION" = "9";
+"ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES" = ("AppIcon-Aurora","AppIcon-Pulse","AppIcon-Orbit","AppIcon-Signature","AppIcon-Glacier","AppIcon-NeonS","AppIcon-Circuit","AppIcon-Hologram","AppIcon-Midnight");
+"MARKETING_VERSION" = "0.10.0";
+"CURRENT_PROJECT_VERSION" = "10";
 };
 };
 "88B650FBEC2E7831CB0D3BDC" = {
