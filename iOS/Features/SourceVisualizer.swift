@@ -39,7 +39,7 @@ enum SourceEnvelope {
         }
     }
 }
-struct SourceVisualizer:View, Animatable {
+struct SourceVisualizer:View, @MainActor Animatable {
     var progress:Double = 0
     var animatableData:Double { get { progress } set { progress = newValue } }
     @Environment(PlaybackController.self) private var playback
