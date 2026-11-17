@@ -50,6 +50,17 @@ final class SignalPathIntegrationTests: XCTestCase {
         XCTAssertEqual(report.assessment.status,.lossyTransport)
         XCTAssertNil(report.snapshot.deviceOutput)
     }
+    func testOutputInterfaceRateTakesPriorityOverContradictorySessionRate() throws {
+        var report = LiveSignalPath()
+        report.snapshot.source = try PCMFormat(sampleRate:44100,channels:2,bitDepth:24,representation:.signedInteger)
+        report.snapshot.sessionIsActive = true;report.snapshot.sessionSampleRate = 44100
+        report.snapshot.deviceOutput = try PCMFormat(sampleRate:48000,channels:2,bitDepth:32,representation:.floatingPoint)
+        XCTAssertEqual(report.rateComparison,"44.1 kHz → 48.0 kHz · Resampled")
+        report.snapshot.deviceOutput = report.snapshot.source
+        XCTAssertEqual(report.rateComparison,"44.1 kHz → 44.1 kHz · Same endpoint rate")
+        report.snapshot.sessionIsActive = false
+        XCTAssertEqual(report.rateComparison,"Source → iOS output: not observed")
+    }
     func testWaveformUsesActualAmplitudeIncludingSilentRegions() {
         let result = SourceEnvelope.display([0,0,0.5,0.5,1,1,0,0],count:4)
         XCTAssertEqual(result.count,4)

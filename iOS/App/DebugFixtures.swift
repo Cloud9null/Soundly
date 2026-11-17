@@ -66,7 +66,7 @@ import CryptoKit
             song.dateAdded = Date(timeIntervalSince1970:Double(index)); db.mainContext.insert(song)
         }
         try db.mainContext.save()
-        UserDefaults.standard.set("amethyst",forKey:"theme")
+        UserDefaults.standard.set(ProcessInfo.processInfo.arguments.contains("--soundly-light-player") ? "light" : "amethyst",forKey:"theme")
         UserDefaults.standard.set(ProcessInfo.processInfo.arguments.contains("--soundly-visualizer") ? "Mirror" : "Off",forKey:"visualizerStyle")
         UserDefaults.standard.set("Ocean",forKey:"visualizerColor")
     }

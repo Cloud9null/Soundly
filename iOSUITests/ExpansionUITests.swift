@@ -24,7 +24,20 @@ import XCTest
         // Anchor to the stable app window: the native accessory can return a transient infinite AX frame.
         app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:openPoint.x,dy:openPoint.y)).tap()
         XCTAssertTrue(app.buttons["playbackMenu"].waitForExistence(timeout:10))
-        app.buttons["playbackMenu"].tap();app.buttons["Lyrics"].tap()
+        app.buttons["playbackMenu"].tap()
+        let lyrics = app.buttons["openLyrics"]
+        XCTAssertTrue(lyrics.waitForExistence(timeout:5))
+        var lyricsPoint:CGPoint?
+        let menuSettled = NSPredicate { _,_ in
+            guard lyrics.exists,lyrics.isHittable else { return false }
+            let frame = lyrics.frame;let window = app.frame
+            guard frame.minX.isFinite,frame.minY.isFinite,frame.width.isFinite,frame.height.isFinite,
+                  frame.width > 0,frame.height > 0,window.contains(frame) else { return false }
+            lyricsPoint = CGPoint(x:frame.midX-window.minX,y:frame.midY-window.minY);return true
+        }
+        XCTAssertEqual(XCTWaiter.wait(for:[XCTNSPredicateExpectation(predicate:menuSettled,object:lyrics)],timeout:10),.completed)
+        guard let lyricsPoint else { return }
+        app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:lyricsPoint.x,dy:lyricsPoint.y)).tap()
         XCTAssertTrue(app.navigationBars["Lyrics"].waitForExistence(timeout:5))
         XCTAssertTrue(app.staticTexts["Your words, offline"].waitForExistence(timeout:5))
         let shot = XCTAttachment(screenshot:app.screenshot());shot.name = "Offline lyrics empty state";shot.lifetime = .keepAlways;add(shot)

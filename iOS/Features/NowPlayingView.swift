@@ -61,7 +61,7 @@ struct NowPlayingView: View {
                         Button("Done") { quality = false }.accessibilityIdentifier("closeQuality")
                     }
                 }
-            }.presentationDetents([.medium,.large]).presentationDragIndicator(.visible)
+            }.presentationDetents([.large]).presentationDragIndicator(.visible)
         }
         .sheet(isPresented:$queue) {
             NavigationStack {
@@ -193,7 +193,7 @@ struct NowPlayingView: View {
             iconButton("Queue",symbol:"list.bullet",id:"openQueue") { queue = true }
             Spacer()
             Menu {
-                Button("Lyrics",systemImage:"text.quote") { lyrics = true }
+                Button("Lyrics",systemImage:"text.quote") { lyrics = true }.accessibilityIdentifier("openLyrics")
                 Button("Player appearance",systemImage:"paintpalette") { visualizerSettings = true }
                 Button("Audio quality",systemImage:"waveform") { quality = true }
                 Button("Stop playback",systemImage:"stop") { playback.stop() }

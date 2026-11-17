@@ -21,10 +21,10 @@ struct LiveSignalPath: Sendable {
     var assessment: SignalPathAssessment { SignalPathEvaluator.assess(snapshot) }
     var rateComparison:String {
         guard snapshot.sessionIsActive,let source = snapshot.source?.sampleRate,
-              let rate = snapshot.sessionSampleRate,source > 0,rate > 0 else { return "Source → iOS output: not observed" }
+              let rate = snapshot.deviceOutput?.sampleRate ?? snapshot.sessionSampleRate,source > 0,rate > 0 else { return "Source → iOS output: not observed" }
         let from = String(format:"%.1f kHz",source/1000)
         let to = String(format:"%.1f kHz",rate/1000)
-        return from+" → "+to+(source == rate ? " · Same session rate" : " · Resampled")
+        return from+" → "+to+(source == rate ? " · Same endpoint rate" : " · Resampled")
     }
     var transportLabel:String {
         switch snapshot.route {

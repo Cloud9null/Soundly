@@ -84,11 +84,16 @@ struct SignalPathView: View {
             Divider()
             Text("PCM at the iOS output interface").font(.caption.weight(.semibold))
             Text(Self.format(snapshot.deviceOutput)).font(.subheadline.monospaced()).accessibilityIdentifier("outputPCMFormat")
+            Text("Session reports: "+Self.rate(snapshot.sessionSampleRate)).font(.caption.monospaced())
+            if let output = snapshot.deviceOutput?.sampleRate,let session = snapshot.sessionSampleRate,output != session {
+                Text("Session and output-node rates differ. The interface value above is observed separately; the downstream physical rate remains unverified.").font(.footnote).foregroundStyle(.secondary)
+            }
             Text("This is the PCM format exposed to the app. Float32 is a processing representation, not proof of a 32-bit DAC or a Bluetooth codec.").font(.footnote).foregroundStyle(.secondary)
             LabeledContent("Wireless codec / bitrate",value:"Not reported")
             LabeledContent("Physical DAC depth",value:"Not reported")
             Text("For Bluetooth headphones, speakers and car audio, iOS does not expose the negotiated codec, bitrate or downstream PCM depth through these APIs. USB DACs expose an audio interface, not an end-to-end bit verification. Matching numbers alone cannot prove identical samples.").font(.footnote).foregroundStyle(.secondary)
         }.padding(18).background(.tint.opacity(0.08),in:RoundedRectangle(cornerRadius:22))
+            .accessibilityElement(children:.contain)
             .accessibilityIdentifier("outputSummary")
     }
     private var chain:some View {

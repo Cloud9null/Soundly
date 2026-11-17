@@ -1,9 +1,9 @@
 import XCTest
 
 @MainActor final class PlayerRefinementTests:XCTestCase {
-    private func openPlayer(large:Bool = false)->XCUIApplication {
+    private func openPlayer(large:Bool = false,light:Bool = false)->XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["--soundly-fixtures"] + (large ? ["--soundly-large-type"] : [])
+        app.launchArguments = ["--soundly-fixtures"] + (large ? ["--soundly-large-type"] : []) + (light ? ["--soundly-light-player"] : [])
         app.launch()
         XCTAssertTrue(app.navigationBars["Listen"].waitForExistence(timeout:30))
         capture(app,large ? "Home — enlarged text" : "Home — native bottom accessory")
@@ -18,7 +18,7 @@ import XCTest
         return app
     }
     func testPopulatedFullscreenPlayerQualityArtworkAndQueue() {
-        let app = openPlayer()
+        let app = openPlayer(light:true)
         XCTAssertTrue(app.staticTexts["Track 1 of 3"].exists)
         XCTAssertFalse(app.tabBars.buttons["Library"].isHittable,"Player must cover the root tab bar")
         assertFooter(app)
@@ -31,7 +31,9 @@ import XCTest
         XCTAssertTrue(app.navigationBars["Signal Path"].waitForExistence(timeout:5))
         XCTAssertTrue(app.descendants(matching:.any)["rateSummary"].exists)
         XCTAssertTrue(app.descendants(matching:.any)["outputSummary"].exists)
-        XCTAssertTrue(app.descendants(matching:.any)["outputPCMFormat"].exists)
+        let outputFormat = app.descendants(matching:.any)["outputPCMFormat"]
+        if !outputFormat.exists { app.scrollViews.firstMatch.swipeUp() }
+        XCTAssertTrue(outputFormat.waitForExistence(timeout:5))
         capture(app,"Live quality report — simulator observations")
         app.buttons["closeQuality"].tap()
         app.buttons["openQueue"].tap()
