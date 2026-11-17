@@ -4,15 +4,15 @@
 
 Native iOS 26+ SwiftUI local music library and player under development. Official repository: Cloud9null/Soundly. Work is on `feat/ios-mvp` in draft PR #1; main is not overwritten or merged automatically.
 
-## Latest device preview — 0.11.0 (11)
+## Latest device preview — 0.12.0 (12)
 
-The [0.11 verification report](Documentation/PHASE-11.md) records the passing unsigned iPhone Release, all 107 unique tests and inspected IPA hashes. [Spanish update guide](Documentation/0.11-GUIA.md).
+The [0.12 verification report](Documentation/PHASE-12-VERIFICATION.md) records the passing unsigned iPhone Release, 111 unique automated tests and inspected IPA hash. [Spanish update guide](Documentation/0.12-GUIA.md).
 
-Adds local M3U/M3U8 import with reviewed matching, retained ambiguous/missing references and retry; per-playlist UTF-8 M3U8 export and explicit system sharing of existing music copies. Playlist files do not include music and remote streams are not fetched. Existing JSON collections remain compatible. See the guide for matching, bounds and cross-player file placement.
+Now Playing has larger square artwork, no volume slider or enclosing playback panel, and a detailed source-derived RMS waveform integrated into seeking. Smooth progress, selectable shapes/palettes, a free color picker and player backdrops remain local and do not alter audio. Native light/dark and accessibility layouts were reviewed.
 
-Preserves the 0.10 full-source waveform/drag-to-seek inside a native glass playback deck, toolbar Library navigation, and ten selectable identities including S/cyber icons. Source visualization is display-only and does not measure DAC output; actual audio processing is unchanged.
+Signal Path now shows separately observed output-node input/output PCM and session data, explicitly reports discrepancies and uses the output interface for its source → output comparison when available. Bluetooth codec/bitrate and physical DAC depth are not guessed. Float32 interface width is not advertised as physical DAC precision; no end-to-end bit-perfect claim is made.
 
-Retains private offline import/playback, honest Signal Path, integrity policy/EQ, smart/manual playlists, local LRC/TXT lyrics and themes. Physical device/DAC acceptance, gapless and broader product scope remain pending.
+Retains local M3U/M3U8 and JSON playlists, private offline import/playback, integrity policy/EQ, smart playlists, LRC/TXT lyrics, global themes and all ten app identities. The audio graph and library schema are unchanged. Physical device/DAC acceptance, gapless and broader product scope remain pending.
 
 ## Implemented
 
