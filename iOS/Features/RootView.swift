@@ -262,7 +262,7 @@ struct SettingsView: View {
         Form {
             Section("Appearance") {
                 NavigationLink("App Icon",destination:AppIconSettingsView())
-                NavigationLink("Visualizer",destination:VisualizerSettingsView())
+                NavigationLink("Player appearance",destination:VisualizerSettingsView())
                 Picker("Theme",selection:$theme) {
                     Section("Automatic") { Text("System").tag(SoundlyTheme.system.rawValue) }
                     Section("Light") { ForEach(SoundlyTheme.allCases.filter { $0.scheme == .light }) { Text($0.name).tag($0.rawValue) } }
@@ -322,7 +322,7 @@ struct SettingsView: View {
                 Text("Music stays on this device. No external artwork or metadata lookups. Imported music is excluded from device backups; keep your original files.").font(.footnote)
             }
             Section("About") {
-                LabeledContent("Version",value:"0.11.0 (11)")
+                LabeledContent("Version",value:"0.12.0 (12)")
                 Text("Built with Apple frameworks. No third-party runtime code.")
             }
         }.soundlySurface().navigationTitle("Settings")

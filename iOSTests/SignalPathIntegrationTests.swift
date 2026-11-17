@@ -32,4 +32,31 @@ final class SignalPathIntegrationTests: XCTestCase {
         XCTAssertNil(report.snapshot.source); XCTAssertNil(report.systemVolume)
         XCTAssertEqual(report.assessment.status,.unknown)
     }
+    func testOutputNodeRateDifferenceIsReportedEvenIfEngineMatchesSource() throws {
+        let source = try PCMFormat(sampleRate:96000,channels:2,bitDepth:24,representation:.signedInteger)
+        let output = try PCMFormat(sampleRate:48000,channels:2,bitDepth:32,representation:.floatingPoint)
+        let snapshot = SignalPathSnapshot(source:source,sourceIsLossless:true,decoderOutput:source,engineOutput:source,
+            processing:.bypassed,engineGain:1,sessionIsActive:true,sessionSampleRate:96000,sessionChannels:2,route:.usbAudio,deviceOutput:output)
+        let report = LiveSignalPath(snapshot:snapshot)
+        XCTAssertEqual(report.assessment.status,.converted)
+        XCTAssertEqual(report.rateSummary,"Sample-rate conversion observed")
+    }
+    func testBluetoothRateComparisonDoesNotGuessCodecOrDACDepth() throws {
+        var report = LiveSignalPath()
+        report.snapshot.source = try PCMFormat(sampleRate:44100,channels:2,bitDepth:24,representation:.signedInteger)
+        report.snapshot.sessionIsActive = true;report.snapshot.sessionSampleRate = 48000;report.snapshot.route = .bluetoothA2DP
+        XCTAssertEqual(report.rateComparison,"44.1 kHz → 48.0 kHz · Resampled")
+        XCTAssertEqual(report.transportLabel,"Bluetooth A2DP · lossy transport")
+        XCTAssertEqual(report.assessment.status,.lossyTransport)
+        XCTAssertNil(report.snapshot.deviceOutput)
+    }
+    func testWaveformUsesActualAmplitudeIncludingSilentRegions() {
+        let result = SourceEnvelope.display([0,0,0.5,0.5,1,1,0,0],count:4)
+        XCTAssertEqual(result.count,4)
+        XCTAssertEqual(result[0],0);XCTAssertEqual(result[3],0)
+        XCTAssertGreaterThan(result[2],result[1]);XCTAssertEqual(result[2],1)
+        XCTAssertEqual(SourceEnvelope.display([0,0],count:8),Array(repeating:0,count:8))
+        XCTAssertEqual(SourceEnvelope.display([.nan,.infinity,-1],count:3),[0,0,0])
+        XCTAssertEqual(SourceEnvelope.display([],count:8),[])
+    }
 }

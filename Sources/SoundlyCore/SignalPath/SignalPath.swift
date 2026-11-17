@@ -16,6 +16,8 @@ public struct SignalPathSnapshot: Sendable {
     public var sourceIsLossless: Bool?
     public var decoderOutput: PCMFormat?
     public var engineOutput: PCMFormat?
+    /// Client-facing output-node format. This is not a measurement of a physical DAC or Bluetooth encoder.
+    public var deviceOutput: PCMFormat?
     public var processing: ProcessingState
     public var engineGain: Double?
     public var sessionIsActive: Bool
@@ -28,11 +30,13 @@ public struct SignalPathSnapshot: Sendable {
                 decoderOutput: PCMFormat? = nil, engineOutput: PCMFormat? = nil,
                 processing: ProcessingState = .unknown, engineGain: Double? = nil,
                 sessionIsActive: Bool = false, sessionSampleRate: Double? = nil,
-                sessionChannels: Int? = nil, route: OutputRoute = .unknown) {
+                sessionChannels: Int? = nil, route: OutputRoute = .unknown,
+                deviceOutput: PCMFormat? = nil) {
         self.source = source
         self.sourceIsLossless = sourceIsLossless
         self.decoderOutput = decoderOutput
         self.engineOutput = engineOutput
+        self.deviceOutput = deviceOutput
         self.processing = processing
         self.engineGain = engineGain
         self.sessionIsActive = sessionIsActive
@@ -74,18 +78,19 @@ public enum SignalPathEvaluator {
             return result(.converted, "Application digital gain is not unity.")
         }
         let formats = [path.source, path.decoderOutput, path.engineOutput].compactMap { $0 }
+        let observed = formats + [path.deviceOutput].compactMap { $0 }
         // A known mismatch is useful even when another stage is unavailable.
-        var rates = formats.map(\.sampleRate)
+        var rates = observed.map(\.sampleRate)
         if let rate = path.sessionSampleRate, rate.isFinite, rate > 0 { rates.append(rate) }
         if Set(rates).count > 1 {
             return result(.converted, "Observed sample rates differ between stages; rate conversion is indicated.")
         }
-        var channels = formats.map(\.channels)
+        var channels = observed.map(\.channels)
         if let count = path.sessionChannels, count > 0 { channels.append(count) }
         if Set(channels).count > 1 {
             return result(.converted, "Observed channel counts differ; channel mapping or mixing is indicated.")
         }
-        for (first, second) in [(path.source, path.decoderOutput), (path.decoderOutput, path.engineOutput)] {
+        for (first, second) in [(path.source, path.decoderOutput), (path.decoderOutput, path.engineOutput), (path.engineOutput,path.deviceOutput)] {
             if let first, let second {
                 if first.representation != .unknown, second.representation != .unknown,
                    first.representation != second.representation {

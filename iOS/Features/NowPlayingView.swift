@@ -2,7 +2,6 @@ import SwiftUI
 import SwiftData
 import AVFoundation
 import AVKit
-import MediaPlayer
 
 struct NowPlayingView: View {
     @Environment(PlaybackController.self) private var playback
@@ -12,7 +11,8 @@ struct NowPlayingView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
     @Environment(\.soundlySurface) private var surface
-    @AppStorage("visualizerStyle") private var visualizerStyle = "Off"
+    @AppStorage("visualizerStyle") private var visualizerStyle = "Mirror"
+    @AppStorage("playerBackdrop") private var backdrop = "Artwork"
     @State private var position = 0.0
     @State private var dragging = false
     @State private var favorite = false
@@ -35,18 +35,13 @@ struct NowPlayingView: View {
                         .accessibilityIdentifier("expandArtwork").disabled(playback.current == nil)
                         .padding(.bottom,22)
                     trackInformation
-                    VStack(spacing:12) {
+                    VStack(spacing:14) {
                         progress
                         transport
-                        HStack(spacing:12) {
-                            Image(systemName:"speaker.fill")
-                            SystemVolumeControl().frame(height:32).accessibilityLabel("System volume")
-                            Image(systemName:"speaker.wave.3.fill")
-                        }.font(.caption).foregroundStyle(.secondary)
-                    }.padding(14).glassEffect(in:RoundedRectangle(cornerRadius:26))
+                    }.padding(.vertical,12)
                         .accessibilityElement(children:.contain).accessibilityIdentifier("playbackDeck").padding(.top,18)
                     if let error = playback.error { Text(error).font(.footnote).foregroundStyle(.red).padding(.top,12) }
-                }.frame(maxWidth:520).padding(.horizontal,28).padding(.top,18).padding(.bottom,24)
+                }.frame(maxWidth:520).padding(.horizontal,24).padding(.top,18).padding(.bottom,16)
                     .frame(maxWidth:.infinity,minHeight:geometry.size.height,alignment:.top)
             }.scrollIndicators(.hidden).clipped()
         }
@@ -79,16 +74,20 @@ struct NowPlayingView: View {
     }
     private func coverSize(_ size:CGSize)->CGFloat {
         if textSize.isAccessibilitySize { return min(180,max(100,size.width*0.45)) }
-        return max(120,min(min(size.width-56,max(120,size.height-410)),440))
+        // Reserve room for a two-line title and accessible controls; the artwork remains square.
+        return max(120,min(min(size.width-48,max(120,size.height-340)),460))
     }
     private var ambient:some View {
         GeometryReader { geometry in
             ZStack {
                 surface
-                if let key = playback.current?.artwork, !reduceTransparency {
+                if backdrop == "Artwork",let key = playback.current?.artwork, !reduceTransparency {
                     CoverView(artwork:key,size:max(geometry.size.width,geometry.size.height),cornerRadius:0)
                         .blur(radius:70).opacity(colorScheme == .dark ? 0.45 : 0.16)
                     (colorScheme == .dark ? Color.black.opacity(0.28) : Color.white.opacity(0.48))
+                } else if let colors = PlayerBackdrop.colors(backdrop), !reduceTransparency {
+                    LinearGradient(colors:colors.map { $0.opacity(colorScheme == .dark ? 0.5 : 0.18) },startPoint:.topLeading,endPoint:.bottomTrailing)
+                    RadialGradient(colors:[Color.accentColor.opacity(0.16),.clear],center:.topTrailing,startRadius:10,endRadius:500)
                 }
             }.frame(width:geometry.size.width,height:geometry.size.height).clipped()
         }.ignoresSafeArea()
@@ -121,14 +120,21 @@ struct NowPlayingView: View {
             Button { quality = true } label: {
                 HStack(spacing:6) {
                     Image(systemName:"waveform")
-                    Text(playback.current?.sourceQuality ?? "Audio quality").lineLimit(1).minimumScaleFactor(0.8)
+                    Text(sourceQuality).lineLimit(1).minimumScaleFactor(0.8)
                     Image(systemName:"chevron.down").font(.system(size:9,weight:.semibold))
                 }.font(.caption.weight(.medium)).padding(.vertical,7).padding(.horizontal,10)
                     .glassEffect(in:.capsule)
             }.buttonStyle(.plain).foregroundStyle(.secondary).accessibilityLabel("Audio quality and signal path")
-                .accessibilityValue(playback.current?.sourceQuality ?? "No source selected")
+                .accessibilityValue(sourceQuality)
                 .accessibilityIdentifier("audioQualityButton")
         }
+    }
+    private var sourceQuality:String {
+        let report = playback.audio.signalPath
+        guard !playback.busy,playback.current != nil,let pcm = report.snapshot.source else {
+            return playback.current?.sourceQuality ?? "Audio quality"
+        }
+        return report.source.codec+" · "+(pcm.bitDepth.map { "\($0)-bit · " } ?? "")+SignalPathView.rate(pcm.sampleRate)
     }
     private var progress:some View {
         VStack(spacing:6) {
@@ -136,12 +142,12 @@ struct NowPlayingView: View {
                 let fraction = min(1,max(0,position/max(0.001,playback.audio.duration)))
                 ZStack(alignment:.leading) {
                     SourceVisualizer(progress:fraction)
-                    Capsule().fill(Color.primary.opacity(0.12)).frame(height:2)
-                    Capsule().fill(Color.primary.opacity(0.7)).frame(width:max(0,geometry.size.width*fraction),height:2)
-                    Circle().fill(Color.primary).frame(width:dragging ? 12 : 6,height:dragging ? 12 : 6)
-                        .shadow(color:.black.opacity(0.12),radius:3,y:1)
-                        .offset(x:max(0,min(geometry.size.width-6,geometry.size.width*fraction-3)))
+                    Capsule().fill(Color.primary.opacity(dragging ? 0.95 : 0.7))
+                        .frame(width:dragging ? 3 : 1.5,height:dragging ? 44 : 32)
+                        .offset(x:max(0,min(geometry.size.width-3,geometry.size.width*fraction-1.5)))
+                        .animation(.easeOut(duration:0.16),value:dragging)
                 }.frame(maxHeight:.infinity).contentShape(Rectangle())
+                    .animation(dragging ? nil : .linear(duration:0.5),value:position)
                     .gesture(DragGesture(minimumDistance:0).onChanged { value in
                         guard playback.current != nil,!playback.busy else { return };dragging = true
                         position = min(max(0,value.location.x/max(1,geometry.size.width)),1)*max(0,playback.audio.duration)
@@ -188,7 +194,7 @@ struct NowPlayingView: View {
             Spacer()
             Menu {
                 Button("Lyrics",systemImage:"text.quote") { lyrics = true }
-                Button("Visualizer",systemImage:"waveform.path") { visualizerSettings = true }
+                Button("Player appearance",systemImage:"paintpalette") { visualizerSettings = true }
                 Button("Audio quality",systemImage:"waveform") { quality = true }
                 Button("Stop playback",systemImage:"stop") { playback.stop() }
                     .disabled(playback.current == nil)
@@ -260,11 +266,4 @@ struct QueueView: View {
 struct SystemRoutePicker: UIViewRepresentable {
     func makeUIView(context:Context)->AVRoutePickerView { let view = AVRoutePickerView(); view.tintColor = .label; return view }
     func updateUIView(_ view:AVRoutePickerView,context:Context) {}
-}
-
-struct SystemVolumeControl:UIViewRepresentable {
-    func makeUIView(context:Context)->MPVolumeView {
-        let view = MPVolumeView(frame:.zero); view.showsRouteButton = false; view.tintColor = .label; return view
-    }
-    func updateUIView(_ view:MPVolumeView,context:Context) {}
 }

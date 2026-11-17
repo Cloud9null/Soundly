@@ -201,6 +201,10 @@ actor AudioTransport {
                 let mixerFormat = graphPath == .direct ? engine.outputNode.inputFormat(forBus:0) : engine.mainMixerNode.outputFormat(forBus:0)
                 value.mixerRate = mixerFormat.sampleRate
                 value.signalPath.snapshot.engineOutput = SourceFormatInspector.pcm(mixerFormat)
+                if active {
+                    value.signalPath.outputNodeInput = SourceFormatInspector.pcm(engine.outputNode.inputFormat(forBus:0))
+                    value.signalPath.snapshot.deviceOutput = SourceFormatInspector.pcm(engine.outputNode.outputFormat(forBus:0))
+                }
                 value.signalPath.snapshot.engineGain = Double(player.volume) * (graphPath == .direct ? 1 : Double(engine.mainMixerNode.outputVolume))
                 value.signalPath.snapshot.processing = settings.processing ? .applied : .bypassed
             }

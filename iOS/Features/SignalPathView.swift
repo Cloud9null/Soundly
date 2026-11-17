@@ -11,6 +11,8 @@ struct SignalPathView: View {
                     .accessibilityIdentifier("signalPathStatus")
                 Text(report.assessment.explanation).foregroundStyle(.secondary)
                 Label(report.rateSummary,systemImage:"waveform.path").font(.headline).accessibilityIdentifier("rateSummary")
+                Text(report.rateComparison).font(.subheadline.monospaced()).accessibilityIdentifier("outputRateComparison")
+                outputSummary
                 if !playback.audio.playing { Label("Playback is paused or stopped. Values describe observed configuration, not verified output samples.",systemImage:"pause.circle").font(.footnote) }
                 chain
                 stage("1",title:"Source",evidence:"FILE METADATA",icon:"doc") {
@@ -42,8 +44,13 @@ struct SignalPathView: View {
                 }
                 stage("5",title:"Output route",evidence:"API REPORTED + UNAVAILABLE",icon:"hifispeaker") {
                     Text(playback.audio.route).font(.headline)
+                    Text(report.transportLabel)
                     Text(playback.audio.routeTypes.isEmpty ? "Port type not observed" : playback.audio.routeTypes.joined(separator:", ")).font(.caption.monospaced())
-                    LabeledContent("DAC effective bit depth",value:"Unknown")
+                    Text("Output-node input: "+Self.format(report.outputNodeInput))
+                    Text("Output-node output: "+Self.format(snapshot.deviceOutput))
+                    LabeledContent("Negotiated transport codec",value:"Not reported by iOS")
+                    LabeledContent("Transport bitrate",value:"Not reported by iOS")
+                    LabeledContent("DAC effective bit depth",value:"Not reported by iOS")
                     LabeledContent("USB chip / capability table",value:"Not exposed here")
                     Text("Only iOS-exposed port names/types and session channels are shown. AirPlay and unspecified Bluetooth transports remain unverified.").font(.footnote).foregroundStyle(.secondary)
                 }
@@ -69,6 +76,21 @@ struct SignalPathView: View {
             }.padding()
         }.soundlySurface().navigationTitle("Signal Path").navigationBarTitleDisplayMode(.inline)
     }
+    private var outputSummary:some View {
+        VStack(alignment:.leading,spacing:12) {
+            Label("What reaches the output",systemImage:"hifispeaker.fill").font(.headline)
+            Text(playback.audio.route).font(.subheadline)
+            Text(report.transportLabel).font(.caption).foregroundStyle(.secondary)
+            Divider()
+            Text("PCM at the iOS output interface").font(.caption.weight(.semibold))
+            Text(Self.format(snapshot.deviceOutput)).font(.subheadline.monospaced()).accessibilityIdentifier("outputPCMFormat")
+            Text("This is the PCM format exposed to the app. Float32 is a processing representation, not proof of a 32-bit DAC or a Bluetooth codec.").font(.footnote).foregroundStyle(.secondary)
+            LabeledContent("Wireless codec / bitrate",value:"Not reported")
+            LabeledContent("Physical DAC depth",value:"Not reported")
+            Text("For Bluetooth headphones, speakers and car audio, iOS does not expose the negotiated codec, bitrate or downstream PCM depth through these APIs. USB DACs expose an audio interface, not an end-to-end bit verification. Matching numbers alone cannot prove identical samples.").font(.footnote).foregroundStyle(.secondary)
+        }.padding(18).background(.tint.opacity(0.08),in:RoundedRectangle(cornerRadius:22))
+            .accessibilityIdentifier("outputSummary")
+    }
     private var chain:some View {
         VStack(alignment:.leading,spacing:10) {
             chainRow("Source · "+report.source.codec,Self.format(snapshot.source))
@@ -77,8 +99,10 @@ struct SignalPathView: View {
             Image(systemName:"arrow.down").foregroundStyle(.secondary)
             chainRow("Engine · "+report.graphPath.description,Self.format(snapshot.engineOutput))
             Image(systemName:"arrow.down").foregroundStyle(.secondary)
-            chainRow("Active iOS output",Self.rate(snapshot.sessionSampleRate)+" · "+playback.audio.route)
-            Text("Bluetooth codec and physical DAC sample depth are not exposed by these APIs.").font(.caption).foregroundStyle(.secondary)
+            chainRow("iOS output interface · PCM",Self.format(snapshot.deviceOutput))
+            Image(systemName:"arrow.down").foregroundStyle(.secondary)
+            chainRow("Destination · "+playback.audio.route,report.transportLabel)
+            Text("Session: "+Self.rate(snapshot.sessionSampleRate)+". Wireless codec / bitrate and physical DAC depth: not reported.").font(.caption).foregroundStyle(.secondary)
         }.padding().background(.tint.opacity(0.06),in:RoundedRectangle(cornerRadius:22))
     }
     private func chainRow(_ name:String,_ value:String)->some View {

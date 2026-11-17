@@ -30,6 +30,8 @@ import XCTest
         app.buttons["audioQualityButton"].tap()
         XCTAssertTrue(app.navigationBars["Signal Path"].waitForExistence(timeout:5))
         XCTAssertTrue(app.descendants(matching:.any)["rateSummary"].exists)
+        XCTAssertTrue(app.descendants(matching:.any)["outputSummary"].exists)
+        XCTAssertTrue(app.descendants(matching:.any)["outputPCMFormat"].exists)
         capture(app,"Live quality report — simulator observations")
         app.buttons["closeQuality"].tap()
         app.buttons["openQueue"].tap()
@@ -50,6 +52,8 @@ import XCTest
         let cover = app.buttons["expandArtwork"]
         XCTAssertTrue(cover.waitForExistence(timeout:10))
         XCTAssertEqual(cover.frame.width,cover.frame.height,accuracy:1)
+        XCTAssertGreaterThanOrEqual(cover.frame.width,app.frame.width*0.7,"Artwork should dominate the player at standard text size")
+        XCTAssertFalse(app.sliders["System volume"].exists)
         XCTAssertGreaterThanOrEqual(cover.frame.minY,app.buttons["nowPlayingDone"].frame.maxY)
         XCTAssertTrue(app.descendants(matching:.any)["waveformScrubber"].waitForExistence(timeout:30))
         let pause = app.buttons["transportToggle"];if pause.label == "Pause" { pause.tap() }
@@ -62,6 +66,11 @@ import XCTest
         let sought = NSPredicate(format:"value BEGINSWITH %@","0:3")
         XCTAssertEqual(XCTWaiter.wait(for:[XCTNSPredicateExpectation(predicate:sought,object:scrubber)],timeout:10),.completed)
         capture(app,"Integrated waveform seek rail and glass playback deck")
+        app.buttons["playbackMenu"].tap()
+        app.buttons["Player appearance"].tap()
+        XCTAssertTrue(app.navigationBars["Player appearance"].waitForExistence(timeout:5))
+        XCTAssertTrue(app.descendants(matching:.any)["playerBackdropPicker"].exists)
+        capture(app,"Waveform color and player background controls")
     }
     func testDuplicateScanReviewAndRemoval() {
         let app = XCUIApplication(); app.launchArguments = ["--soundly-fixtures","--soundly-duplicates"]; app.launch()

@@ -8,15 +8,36 @@ struct LiveSignalPath: Sendable {
     var bufferDuration: Double?
     var requestedRate:Double?
     var graphPath = AudioGraphPath.unknown
+    var outputNodeInput:PCMFormat?
     var rateSummary:String {
         guard snapshot.sessionIsActive,
               let source = snapshot.source, let decoder = snapshot.decoderOutput, let output = snapshot.engineOutput,
               let rate = snapshot.sessionSampleRate, rate > 0 else { return "Sample-rate path not yet observed" }
-        return Set([source.sampleRate,decoder.sampleRate,output.sampleRate,rate]).count == 1
+        let rates = [source.sampleRate,decoder.sampleRate,output.sampleRate,rate] + [snapshot.deviceOutput?.sampleRate].compactMap { $0 }
+        return Set(rates).count == 1
             ? "Native rate across observed stages — not bit-verified"
             : "Sample-rate conversion observed"
     }
     var assessment: SignalPathAssessment { SignalPathEvaluator.assess(snapshot) }
+    var rateComparison:String {
+        guard snapshot.sessionIsActive,let source = snapshot.source?.sampleRate,
+              let rate = snapshot.sessionSampleRate,source > 0,rate > 0 else { return "Source → iOS output: not observed" }
+        let from = String(format:"%.1f kHz",source/1000)
+        let to = String(format:"%.1f kHz",rate/1000)
+        return from+" → "+to+(source == rate ? " · Same session rate" : " · Resampled")
+    }
+    var transportLabel:String {
+        switch snapshot.route {
+        case .bluetoothA2DP: "Bluetooth A2DP · lossy transport"
+        case .bluetoothHFP: "Bluetooth hands-free · voice transport"
+        case .bluetoothLE: "Bluetooth LE · codec unreported"
+        case .usbAudio: "USB audio · PCM interface"
+        case .wiredHeadphones: "Wired headphones · analog output"
+        case .builtInSpeaker,.builtInReceiver: "Built-in · analog output"
+        case .airPlay: "AirPlay · transport unreported"
+        case .unknown: "Transport not observed"
+        }
+    }
     static func route(_ portTypes:[String])->OutputRoute {
         guard portTypes.count == 1, let type = portTypes.first else { return .unknown }
         switch type {
