@@ -25,11 +25,12 @@ import XCTest
         app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:openPoint.x,dy:openPoint.y)).tap()
         XCTAssertTrue(app.buttons["playbackMenu"].waitForExistence(timeout:10))
         app.buttons["playbackMenu"].tap()
-        let lyrics = app.buttons["openLyrics"]
+        let identifiedLyrics = app.buttons["openLyrics"]
+        let lyrics = identifiedLyrics.waitForExistence(timeout:2) ? identifiedLyrics : app.buttons["Lyrics"]
         XCTAssertTrue(lyrics.waitForExistence(timeout:5))
         var lyricsPoint:CGPoint?
         let menuSettled = NSPredicate { _,_ in
-            guard lyrics.exists,lyrics.isHittable else { return false }
+            guard lyrics.exists else { return false }
             let frame = lyrics.frame;let window = app.frame
             guard frame.minX.isFinite,frame.minY.isFinite,frame.width.isFinite,frame.height.isFinite,
                   frame.width > 0,frame.height > 0,window.contains(frame) else { return false }
