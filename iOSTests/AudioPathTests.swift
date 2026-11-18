@@ -11,7 +11,7 @@ final class AudioPathTests:XCTestCase {
         XCTAssertEqual(PCMGraph.path(source:source,output:AVAudioFormat(standardFormatWithSampleRate:44100,channels:1)),.systemMixer)
         XCTAssertEqual(PCMGraph.path(source:source,output:AVAudioFormat(commonFormat:.pcmFormatInt16,sampleRate:44100,channels:2,interleaved:true)),.systemMixer)
     }
-    func testRateEqualityDoesNotHideIntegerFloatConversion() throws {
+    func testNativeRateAllowsExactFloatDecodingButNotResampling() throws {
         var report = LiveSignalPath()
         report.snapshot.source = try PCMFormat(sampleRate:44100,channels:2,bitDepth:24,representation:.signedInteger)
         report.snapshot.sourceIsLossless = true
@@ -20,7 +20,7 @@ final class AudioPathTests:XCTestCase {
         report.snapshot.sessionIsActive = true; report.snapshot.sessionSampleRate = 44100; report.snapshot.sessionChannels = 2
         report.snapshot.engineGain = 1; report.snapshot.processing = .bypassed; report.snapshot.route = .usbAudio
         report.graphPath = .direct
-        XCTAssertTrue(report.rateSummary.hasPrefix("Native rate")); XCTAssertEqual(report.assessment.status,.converted)
+        XCTAssertTrue(report.rateSummary.hasPrefix("Native rate")); XCTAssertEqual(report.assessment.status,.nativeRateUnverified)
         report.snapshot.sessionSampleRate = 48000
         XCTAssertEqual(report.rateSummary,"Sample-rate conversion observed")
         report.snapshot.sessionIsActive = false

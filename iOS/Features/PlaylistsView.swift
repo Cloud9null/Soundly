@@ -81,54 +81,7 @@ struct PlaylistsView:View {
             Section {
                 ForEach($lists) { $list in
                     NavigationLink {
-                        List {
-                            Section {
-                                HStack(spacing: 12) {
-                                    Button("Play", systemImage: "play.fill") { play(list, shuffled: false) }
-                                    Button("Shuffle", systemImage: "shuffle") { play(list, shuffled: true) }
-                                }
-                                .buttonStyle(.glass)
-                                .disabled(!resolved(list).contains(where: \.available))
-                                Button("Add songs", systemImage: "plus") { addingTracks = list }
-                            }
-                            let tracks = tracksByHash
-                            Section("Tracks · \(list.hashes.count)") {
-                                ForEach(Array(list.hashes.enumerated()),id:\.offset) { index,hash in
-                                    if let song = tracks[hash] {
-                                        Button(song.title) { playback.play(song,within:resolved(list)) }.disabled(!song.available)
-                                            .contextMenu {
-                                                if let url = musicURL(song) { ShareLink(item:url) { Label("Share music file",systemImage:"square.and.arrow.up") } }
-                                            }
-                                    } else { Text("Unavailable track").foregroundStyle(.secondary) }
-                                }.onDelete { list.hashes.remove(atOffsets:$0); save() }
-                                    .onMove { list.hashes.move(fromOffsets:$0,toOffset:$1); save() }
-                            }
-                            if let entries = list.unresolved,!entries.isEmpty {
-                                Section("Unmatched references · \(entries.count)") {
-                                    ForEach(Array(entries.enumerated()),id:\.offset) { _,entry in
-                                        VStack(alignment:.leading) {
-                                            Text(entry.title ?? entry.reference)
-                                            Text(entry.reference).font(.caption).foregroundStyle(.secondary)
-                                        }
-                                    }.onDelete { offsets in list.unresolved?.remove(atOffsets:offsets);save() }
-                                    Button("Retry matching") { retryMatching(list) }.disabled(busy)
-                                }
-                            }
-                            Section("Export") {
-                                Button("Export M3U8",systemImage:"square.and.arrow.up") { exportM3U(list) }
-                                Button("Export Soundly JSON", systemImage: "doc") { exportJSON([list], named: list.name) }
-                                if let detailMessage { Text(detailMessage).font(.footnote).foregroundStyle(.secondary) }
-                            } footer: { Text("Playlist only. To use elsewhere, share music files from the track context menus and place them beside this playlist, preserving filenames. Unmatched references are retained separately and exported after matched tracks.") }
-                        }.navigationTitle(list.name).toolbar {
-                            ToolbarItem(placement: .primaryAction) { EditButton() }
-                            ToolbarItem(placement: .secondaryAction) {
-                                Button("Rename playlist", systemImage: "pencil") {
-                                    proposedName = list.name
-                                    renameID = list.id
-                                    renaming = true
-                                }
-                            }
-                        }.soundlySurface()
+                        playlistDetail($list)
                     } label: {
                         VStack(alignment: .leading, spacing: 4) {
                             Label(list.name, systemImage: "music.note.list")
@@ -156,21 +109,6 @@ struct PlaylistsView:View {
         }.navigationTitle("Playlists").soundlySurface().disabled(busy)
             .onAppear { reload() }
             .onChange(of: stored) { _, _ in reload() }
-            .alert("Rename playlist", isPresented: $renaming) {
-                TextField("Playlist name", text: $proposedName)
-                Button("Cancel", role: .cancel) { renameID = nil }
-                Button("Save") { rename() }
-                    .disabled(proposedName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || proposedName.count > 200)
-            }
-            .sheet(item: $addingTracks) { list in
-                PlaylistTrackPicker(songs: songs, existing: Set(list.hashes)) { hashes in
-                    guard let index = lists.firstIndex(where: { $0.id == list.id }) else { return false }
-                    var updated = lists
-                    let currentHashes = Set(updated[index].hashes)
-                    updated[index].hashes.append(contentsOf: hashes.filter { !currentHashes.contains($0) })
-                    return save(candidate: updated)
-                }
-            }
             .sheet(isPresented: Binding(get: { pendingJSON != nil }, set: { if !$0 { pendingJSON = nil } })) {
                 if let exchange = pendingJSON {
                     NavigationStack {
@@ -189,7 +127,10 @@ struct PlaylistsView:View {
                 }
             }
             .fileExporter(isPresented:$exporting,document:document,contentType:exportType,defaultFilename:exportName) { result in
-                if case .failure(let error) = result,(error as NSError).code != NSUserCancelledError { message = "Export could not finish. Your playlists were preserved." }
+                if case .failure(let error) = result, (error as NSError).code != NSUserCancelledError {
+                    message = "Export could not finish. Your playlists were preserved."
+                    detailMessage = message
+                }
             }
             .fileImporter(isPresented:$importing,allowedContentTypes:[.json,.m3uPlaylist,.plainText,.data]) { result in importFile(result) }
             .sheet(item:$pending) { preview in
@@ -218,6 +159,74 @@ struct PlaylistsView:View {
                 }
             }
     }
+    private func playlistDetail(_ binding: Binding<LocalPlaylist>) -> some View {
+        let list = binding.wrappedValue
+        return List {
+            Section {
+                HStack(spacing: 12) {
+                    Button("Play", systemImage: "play.fill") { play(list, shuffled: false) }
+                    Button("Shuffle", systemImage: "shuffle") { play(list, shuffled: true) }
+                }
+                .buttonStyle(.glass)
+                .disabled(!resolved(list).contains(where: \.available))
+                Button("Add songs", systemImage: "plus") { addingTracks = list }
+                    .accessibilityIdentifier("playlistAddSongs")
+            }
+            let tracks = tracksByHash
+            Section("Tracks · \(list.hashes.count)") {
+                ForEach(Array(list.hashes.enumerated()),id:\.offset) { _,hash in
+                    if let song = tracks[hash] {
+                        Button(song.title) { playback.play(song,within:resolved(list)) }.disabled(!song.available)
+                            .contextMenu {
+                                if let url = musicURL(song) { ShareLink(item:url) { Label("Share music file",systemImage:"square.and.arrow.up") } }
+                            }
+                    } else { Text("Unavailable track").foregroundStyle(.secondary) }
+                }.onDelete { binding.wrappedValue.hashes.remove(atOffsets:$0); save() }
+                    .onMove { binding.wrappedValue.hashes.move(fromOffsets:$0,toOffset:$1); save() }
+            }
+            if let entries = list.unresolved,!entries.isEmpty {
+                Section("Unmatched references · \(entries.count)") {
+                    ForEach(Array(entries.enumerated()),id:\.offset) { _,entry in
+                        VStack(alignment:.leading) {
+                            Text(entry.title ?? entry.reference)
+                            Text(entry.reference).font(.caption).foregroundStyle(.secondary)
+                        }
+                    }.onDelete { offsets in binding.wrappedValue.unresolved?.remove(atOffsets:offsets);save() }
+                    Button("Retry matching") { retryMatching(list) }.disabled(busy)
+                }
+            }
+            Section {
+                Button("Export M3U8",systemImage:"square.and.arrow.up") { exportM3U(list) }
+                Button("Export Soundly JSON", systemImage: "doc") { exportJSON([list], named: list.name) }
+                if let detailMessage { Text(detailMessage).font(.footnote).foregroundStyle(.secondary) }
+            } header: { Text("Export") } footer: { Text("Playlist only. To use elsewhere, share music files from the track context menus and place them beside this playlist, preserving filenames. Unmatched references are retained separately and exported after matched tracks.") }
+        }.navigationTitle(list.name).toolbar {
+            ToolbarItem(placement: .primaryAction) { EditButton() }
+            ToolbarItem(placement: .secondaryAction) {
+                Button("Rename playlist", systemImage: "pencil") {
+                    proposedName = list.name
+                    renameID = list.id
+                    renaming = true
+                }
+            }
+        }.soundlySurface()
+            .alert("Rename playlist", isPresented: $renaming) {
+                TextField("Playlist name", text: $proposedName)
+                Button("Cancel", role: .cancel) { renameID = nil }
+                Button("Save") { rename() }
+                    .disabled(proposedName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || proposedName.count > 200)
+            }
+            .sheet(item: $addingTracks) { list in
+                PlaylistTrackPicker(songs: songs, existing: Set(list.hashes)) { hashes in
+                    guard let index = lists.firstIndex(where: { $0.id == list.id }) else { return false }
+                    var updated = lists
+                    let currentHashes = Set(updated[index].hashes)
+                    updated[index].hashes.append(contentsOf: hashes.filter { !currentHashes.contains($0) })
+                    return save(candidate: updated)
+                }
+            }
+    }
+
     private var catalog:[M3UCatalogItem] { songs.map { M3UCatalogItem(hash:$0.fileHash,filename:$0.filename,title:$0.title,artist:$0.artist) } }
     private func importFile(_ result:Result<URL,Error>) {
         guard case .success(let url) = result else { return }
@@ -363,6 +372,8 @@ private struct PlaylistTrackPicker: View {
     @State private var selected: [String] = []
     @State private var showError = false
 
+    private var selectedHashes: Set<String> { Set(selected) }
+
     private var matches: [Song] {
         songs.filter { song in
             song.available && (search.isEmpty || [song.title, song.artist, song.album].contains {
@@ -375,9 +386,10 @@ private struct PlaylistTrackPicker: View {
         NavigationStack {
             List {
                 if matches.isEmpty { ContentUnavailableView("No songs found", systemImage: "music.note") }
+                let selection = selectedHashes
                 ForEach(matches) { song in
                     let added = existing.contains(song.fileHash)
-                    let checked = selected.contains(song.fileHash)
+                    let checked = selection.contains(song.fileHash)
                     Button {
                         if checked { selected.removeAll { $0 == song.fileHash } }
                         else { selected.append(song.fileHash) }

@@ -23,10 +23,17 @@ import CryptoKit
             pcm.withUnsafeMutableBytes { buffer in
                 let p = buffer.bindMemory(to:UInt8.self)
                 for i in 0..<frames {
-                    let t = Double(i)/44100
-                    let envelope = (0.5+0.5*sin(t*2.1))*(0.4+0.6*pow(cos(t*0.7),2))
-                    let magnitude:Int32 = visualizer ? Int32(envelope*2_000_000) : 4096
-                    let a:Int32 = i%2 == 0 ? magnitude : -magnitude/2
+                    let a: Int32
+                    if visualizer {
+                        let t = Double(i) / 44_100
+                        let envelope = (0.5 + 0.5 * sin(t * 2.1)) * (0.4 + 0.6 * pow(cos(t * 0.7), 2))
+                        let beat = t.truncatingRemainder(dividingBy: 0.48)
+                        let bass = exp(-beat * 12) * sin(2 * .pi * 90 * beat)
+                        let tone = 0.22 * sin(2 * .pi * 350 * t)
+                        a = Int32(envelope * (0.75 * bass + tone) * 3_000_000)
+                    } else {
+                        a = i % 2 == 0 ? 4096 : -2048
+                    }
                     for channel in 0..<2 {
                         let value = channel == 0 ? a : -a
                         for byte in 0..<3 { p[i*6+channel*3+byte] = UInt8(truncatingIfNeeded:value >> (byte*8)) }
