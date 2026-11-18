@@ -43,7 +43,13 @@ struct PendingM3U:Identifiable {
     let remote:Int
     let invalid:Int
 }
+enum PlaylistEntryPoint: Hashable {
+    case create, importFile
+}
+
 struct PlaylistsView:View {
+    var entryPoint: PlaylistEntryPoint? = nil
+    @State private var didOpenEntryPoint = false
     @Query(sort:\Song.title) private var songs:[Song]
     @Environment(PlaybackController.self) private var playback
     @AppStorage("localPlaylists") private var stored = Data()
@@ -108,6 +114,16 @@ struct PlaylistsView:View {
             }
         }.navigationTitle("Playlists").soundlySurface().disabled(busy)
             .onAppear { reload() }
+            .task {
+                guard !didOpenEntryPoint, let entryPoint else { return }
+                // Allow the navigation transition to settle before focusing or presenting Files.
+                do { try await Task.sleep(for: .milliseconds(350)) } catch { return }
+                didOpenEntryPoint = true
+                switch entryPoint {
+                case .create: naming = true
+                case .importFile: importing = true
+                }
+            }
             .onChange(of: stored) { _, _ in reload() }
             .sheet(isPresented: Binding(get: { pendingJSON != nil }, set: { if !$0 { pendingJSON = nil } })) {
                 if let exchange = pendingJSON {

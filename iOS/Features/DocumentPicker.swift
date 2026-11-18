@@ -6,7 +6,7 @@ struct MusicDocumentPicker: UIViewControllerRepresentable {
     let picked: ([URL]) -> Void
     func makeCoordinator() -> Coordinator { Coordinator(picked: picked) }
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-        let picker = UIDocumentPickerViewController(forOpeningContentTypes: folders ? [.folder] : [.audio], asCopy: false)
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: folders ? [.folder] : [.audio, .data], asCopy: false)
         picker.allowsMultipleSelection = !folders
         picker.delegate = context.coordinator
         return picker

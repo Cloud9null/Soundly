@@ -96,6 +96,41 @@ final class LibraryIntegrationTests: XCTestCase {
         let result = await importer.run([root]) { _ in }
         XCTAssertEqual(result.imported,1); XCTAssertEqual(result.discovered,1)
     }
+    func testSelectedAndFolderLRCMatchByFilenameWithoutReplacingLyrics() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let album = root.appendingPathComponent("Album")
+        let lyricsDir = root.appendingPathComponent("LocalLyrics")
+        try FileManager.default.createDirectory(at: album, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: lyricsDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let audio = try fixture(album)
+        let lrc = audio.deletingPathExtension().appendingPathExtension("LRC")
+        try Data("[00:01.00]First line".utf8).write(to: lrc)
+        let db = try container()
+        let store = LyricsStore(directory: lyricsDir)
+        let importer = await Task.detached {
+            MusicImporter(writer: LibraryWriter(modelContainer: db), lyricsStore: store)
+        }.value
+
+        let selected = await importer.run([lrc, audio]) { _ in }
+        XCTAssertEqual(selected.lyrics, 1)
+        XCTAssertEqual(selected.failures, 0)
+        let song = try XCTUnwrap(try db.mainContext.fetch(FetchDescriptor<Song>()).first)
+        let first = try await store.read(song.fileHash)
+        XCTAssertEqual(first?.cue(at: 1)?.text, "First line")
+
+        try Data("[00:01.00]Folder line".utf8).write(to: lrc)
+        let duplicate = await importer.run([album]) { _ in }
+        XCTAssertEqual(duplicate.lyrics, 0)
+        let unchanged = try await store.read(song.fileHash)
+        XCTAssertEqual(unchanged?.cue(at: 1)?.text, "First line")
+
+        try await store.remove(song.fileHash)
+        let recovered = await importer.run([album]) { _ in }
+        XCTAssertEqual(recovered.lyrics, 1)
+        let attached = try await store.read(song.fileHash)
+        XCTAssertEqual(attached?.cue(at: 1)?.text, "Folder line")
+    }
     func testFLACParserRejectsTruncatedBlock() throws {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at:url) }

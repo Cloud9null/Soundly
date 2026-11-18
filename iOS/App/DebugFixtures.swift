@@ -69,12 +69,16 @@ import CryptoKit
             }
             if let jpeg = image.jpegData(compressionQuality:0.9),let name = item.artwork { try jpeg.write(to:LibraryPaths.directory("Artwork").appendingPathComponent(name)) }
             let song = Song(item)
+            if index == 0 && ProcessInfo.processInfo.arguments.contains("--soundly-lyrics") {
+                let lyrics = Data("[00:00.00]Opening line\n[00:10.00]Second line".utf8)
+                _ = try await LyricsStore.shared.write(item.hash, data: lyrics, synchronized: true)
+            }
             if index == 0 && ProcessInfo.processInfo.arguments.contains("--soundly-visualizer") { song.title = "Reference 1 — A long song title featuring another artist, deluxe edition" }
             song.dateAdded = Date(timeIntervalSince1970:Double(index)); db.mainContext.insert(song)
         }
         try db.mainContext.save()
         UserDefaults.standard.set(ProcessInfo.processInfo.arguments.contains("--soundly-light-player") ? "light" : "amethyst",forKey:"theme")
-        UserDefaults.standard.set(ProcessInfo.processInfo.arguments.contains("--soundly-visualizer") ? "Mirror" : "Off",forKey:"visualizerStyle")
+        UserDefaults.standard.set(ProcessInfo.processInfo.arguments.contains("--soundly-visualizer") ? "Flow" : "Off",forKey:"visualizerStyle")
         UserDefaults.standard.set("Ocean",forKey:"visualizerColor")
     }
 }

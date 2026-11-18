@@ -1,6 +1,5 @@
 import SwiftUI
 import SwiftData
-import UniformTypeIdentifiers
 
 struct LyricsView:View {
     @Environment(PlaybackController.self) private var playback
@@ -13,6 +12,9 @@ struct LyricsView:View {
     @State private var removalKey:String?
     @State private var busy = false
     @State private var error:String?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var currentLine: Double? { lyrics?.cue(at: playback.audio.elapsed)?.time }
     var body:some View {
         ScrollViewReader { proxy in
             ScrollView {
@@ -21,19 +23,41 @@ struct LyricsView:View {
                         if lyrics.cues.isEmpty { Text(lyrics.text).font(.title3).textSelection(.enabled) }
                         else {
                             ForEach(lyrics.cues) { cue in
+                                let isCurrent = currentLine == cue.time
                                 Button { playback.seek(cue.time) } label: {
-                                    Text(cue.text.isEmpty ? "♪" : cue.text).font(.title2.weight(.semibold))
-                                        .foregroundStyle(lyrics.cue(at:playback.audio.elapsed)?.time == cue.time ? Color.primary : Color.secondary)
-                                        .frame(maxWidth:.infinity,minHeight:44,alignment:.leading).contentShape(Rectangle())
+                                    Text(cue.text.isEmpty ? "♪" : cue.text)
+                                        .font(.title2.weight(isCurrent ? .bold : .semibold))
+                                        .foregroundStyle(isCurrent ? Color.primary : Color.secondary)
+                                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                                        .padding(.horizontal, 12)
+                                        .background(isCurrent ? Color.accentColor.opacity(0.13) : .clear,
+                                                    in: RoundedRectangle(cornerRadius: 14))
+                                        .contentShape(Rectangle())
                                 }.buttonStyle(.plain).disabled(playback.busy).id(cue.time)
-                                    .accessibilityValue(lyrics.cue(at:playback.audio.elapsed)?.time == cue.time ? "Current line" : "")
+                                    .accessibilityValue(isCurrent ? "Current line" : "")
                             }
                         }
-                    } else { ContentUnavailableView("Your words, offline",systemImage:"text.quote",description:Text("Import UTF-8 LRC or TXT lyrics for this track. No online lyrics service is contacted.")) }
+                    } else {
+                        ContentUnavailableView {
+                            Label("No lyrics for this track", systemImage: "quote.bubble")
+                        } description: {
+                            Text("Choose an LRC for synced lyrics or a TXT file for plain lyrics.")
+                        } actions: {
+                            Button("Import lyrics", systemImage: "square.and.arrow.down") {
+                                importKey = key
+                                importing = true
+                            }.buttonStyle(.glass).disabled(key == nil || busy)
+                        }
+                    }
                     if let error { Text(error).font(.footnote).foregroundStyle(.secondary) }
                 }.padding()
-            }.onChange(of:lyrics?.cue(at:playback.audio.elapsed)?.time) { _, time in if let time { proxy.scrollTo(time,anchor:.center) } }
-        }.navigationTitle("Lyrics").soundlySurface()
+            }.onChange(of: currentLine) { _, time in
+                guard let time else { return }
+                withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) {
+                    proxy.scrollTo(time, anchor: .center)
+                }
+            }
+        }.navigationTitle(lyrics?.cues.isEmpty == false ? "Synced Lyrics" : "Lyrics").soundlySurface()
             .toolbar {
                 ToolbarItem(placement:.topBarTrailing) {
                     Menu("Lyrics options",systemImage:"ellipsis") {
@@ -74,11 +98,7 @@ struct LyricsView:View {
                     do {
                         let url = try result.get();let ext = url.pathExtension.lowercased()
                         guard ["lrc","txt"].contains(ext) else { throw CocoaError(.fileReadUnknown) }
-                        let bytes = try await Task.detached {
-                            let scoped = url.startAccessingSecurityScopedResource();defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-                            let file = try FileHandle(forReadingFrom:url);defer { try? file.close() }
-                            return try file.read(upToCount:1_048_577) ?? Data()
-                        }.value
+                        let bytes = try await Task.detached { try LyricsStore.readSource(url) }.value
                         let result = try await LyricsStore.shared.write(key,data:bytes,synchronized:ext == "lrc")
                         if self.key == key { lyrics = result;error = nil }
                     } catch { if self.key == key { self.error = "Import failed. Existing lyrics were preserved. Use UTF-8 LRC/TXT up to 1 MiB." } }

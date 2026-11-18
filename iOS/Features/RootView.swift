@@ -121,6 +121,7 @@ struct LibraryView: View {
     @State private var mode = "Songs"
     @State private var favorites = false
     @State private var newest = false
+    @State private var playlistAction: PlaylistEntryPoint?
     var body: some View {
         VStack(spacing:0) {
             SongResults(search:search,mode:mode,favorites:favorites,newest:newest,select:select)
@@ -146,7 +147,12 @@ struct LibraryView: View {
                     Toggle("Recently added first",isOn:$newest)
                 }
             }
-            ToolbarItem(placement:.topBarTrailing) { AddMusicButton() }
+            ToolbarItem(placement: .topBarTrailing) {
+                AddMusicButton(playlistAction: { playlistAction = $0 })
+            }
+        }
+        .navigationDestination(item: $playlistAction) { action in
+            PlaylistsView(entryPoint: action)
         }
     }
 }
@@ -216,14 +222,23 @@ struct SongResults: View {
 }
 
 struct AddMusicButton: View {
+    var playlistAction: ((PlaylistEntryPoint) -> Void)? = nil
     @Environment(\.modelContext) private var context
     @Environment(ImportController.self) private var importer
     @State private var picker:Bool?
     var body: some View {
-        Menu("Add Music",systemImage:"plus") {
-            Button("Select files",systemImage:"doc") { picker = false }
-            Button("Select folder",systemImage:"folder") { picker = true }
-        }.disabled(importer.running)
+        Menu(playlistAction == nil ? "Add Music" : "Add to Library", systemImage: "plus") {
+            Section("Music") {
+                Button("Select files", systemImage: "doc") { picker = false }.disabled(importer.running)
+                Button("Select folder", systemImage: "folder") { picker = true }.disabled(importer.running)
+            }
+            if let playlistAction {
+                Section("Playlists") {
+                    Button("New playlist", systemImage: "plus.rectangle.on.rectangle") { playlistAction(.create) }
+                    Button("Import playlist", systemImage: "square.and.arrow.down") { playlistAction(.importFile) }
+                }
+            }
+        }.accessibilityIdentifier("libraryAdd")
         .sheet(isPresented:Binding(get:{picker != nil},set:{ if !$0 { picker = nil } })) {
             MusicDocumentPicker(folders:picker ?? false) { urls in
                 picker = nil; importer.start(urls,container:context.container)
@@ -325,7 +340,7 @@ struct SettingsView: View {
                 Text("Music stays on this device. No external artwork or metadata lookups. Imported music is excluded from device backups; keep your original files.").font(.footnote)
             }
             Section("About") {
-                LabeledContent("Version",value:"0.13.0 (13)")
+                LabeledContent("Version",value:"0.14.0 (14)")
                 Text("Built with Apple frameworks. No third-party runtime code.")
             }
         }.soundlySurface().navigationTitle("Settings")

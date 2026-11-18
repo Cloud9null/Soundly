@@ -9,12 +9,28 @@ enum SourceEnvelope {
         let interval: Double
 
         func pulse(at seconds: Double) -> CGFloat {
-            guard seconds.isFinite, seconds >= 0, interval > 0, !pulses.isEmpty else { return 0 }
-            let index = min(seconds / interval, Double(pulses.count - 1))
+            interpolate(pulses, at: seconds)
+        }
+
+        func flow(at seconds: Double) -> [CGFloat] {
+            (0..<48).map { index in
+                let x = CGFloat(index) / 47
+                let time = seconds - Double(x) * 1.12
+                let hit = interpolate(pulses, at: time)
+                let level = interpolate(levels, at: time)
+                let body = min(0.40, sqrt(max(0, level)) * 0.64)
+                let taper = pow(1 - x, 0.52)
+                return min(1, (body + hit * 1.15) * taper)
+            }
+        }
+
+        private func interpolate(_ values: [Float], at seconds: Double) -> CGFloat {
+            guard seconds.isFinite, seconds >= 0, interval > 0, !values.isEmpty else { return 0 }
+            let index = min(seconds / interval, Double(values.count - 1))
             let lower = Int(index)
-            let upper = min(lower + 1, pulses.count - 1)
+            let upper = min(lower + 1, values.count - 1)
             let fraction = Float(index - Double(lower))
-            return CGFloat(pulses[lower] + (pulses[upper] - pulses[lower]) * fraction)
+            return CGFloat(values[lower] + (values[upper] - values[lower]) * fraction)
         }
     }
 
@@ -97,7 +113,7 @@ struct SourceVisualizer:View, @MainActor Animatable {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("waveformMotion") private var motionEnabled = true
-    @AppStorage("visualizerStyle") private var style = "Mirror"
+    @AppStorage("visualizerStyle") private var style = "Flow"
     @AppStorage("visualizerColor") private var tint = "Mint"
     @AppStorage("waveformRed") private var red = 0.18
     @AppStorage("waveformGreen") private var green = 0.8
@@ -120,8 +136,13 @@ struct SourceVisualizer:View, @MainActor Animatable {
             && style != "Off" && analysis != nil && audio.playing && !playback.busy
         TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !moving)) { _ in
             let elapsed = audio.elapsed + max(0, min(0.55, ProcessInfo.processInfo.systemUptime - audio.observedAt))
-            let pulse = moving ? analysis?.pulse(at: min(audio.duration, elapsed)) ?? 0 : 0
-            waveform(pulse: pulse)
+            let time = min(audio.duration, moving ? elapsed : audio.elapsed)
+            if style == "Flow", motionEnabled, !reduceMotion, let analysis, !samples.isEmpty {
+                flow(values: analysis.flow(at: allowMotion ? time : min(audio.duration, progress * audio.duration)))
+            } else {
+                let pulse = moving ? analysis?.pulse(at: time) ?? 0 : 0
+                waveform(pulse: pulse)
+            }
         }
         .accessibilityHidden(true)
         .task(id: "\(playback.current?.id.uuidString ?? "")-\(style == "Off")") {
@@ -139,6 +160,50 @@ struct SourceVisualizer:View, @MainActor Animatable {
                 analysis = result.0
                 samples = result.1
             } catch { /* The simple seek rail stays available. */ }
+        }
+    }
+
+    private func flow(values: [CGFloat]) -> some View {
+        Canvas { context, size in
+            let baseline = max(6, size.height - 5)
+            let rail = Path(roundedRect: CGRect(x: 0, y: baseline, width: size.width, height: 2.5), cornerRadius: 1.25)
+            context.fill(rail, with: .color(.primary.opacity(0.16)))
+            let palette = [colors.first ?? .mint, colors.last ?? .cyan]
+            let railEnd = size.width * min(1, max(0, progress))
+            let played = Path(roundedRect: CGRect(x: 0, y: baseline, width: railEnd, height: 2.5), cornerRadius: 1.25)
+            context.fill(played, with: .linearGradient(Gradient(colors: palette), startPoint: .zero,
+                                                       endPoint: CGPoint(x: size.width, y: 0)))
+
+            let points = values.enumerated().map { index, value in
+                CGPoint(x: size.width * CGFloat(index) / CGFloat(values.count - 1),
+                        y: baseline - 3 - value * (baseline - 6))
+            }
+            guard let first = points.first else { return }
+            var line = Path()
+            line.move(to: first)
+            var previous = first
+            for point in points.dropFirst() {
+                let middle = (previous.x + point.x) / 2
+                line.addCurve(to: point, control1: CGPoint(x: middle, y: previous.y),
+                              control2: CGPoint(x: middle, y: point.y))
+                previous = point
+            }
+            var fill = line
+            fill.addLine(to: CGPoint(x: size.width, y: baseline - 3))
+            fill.addLine(to: CGPoint(x: 0, y: baseline - 3))
+            fill.closeSubpath()
+            let shade = palette.first ?? .mint
+            context.fill(fill, with: .linearGradient(Gradient(colors: [shade.opacity(0.46), shade.opacity(0.035)]),
+                                                     startPoint: .zero, endPoint: CGPoint(x: 0, y: baseline)))
+            let gradient = GraphicsContext.Shading.linearGradient(Gradient(colors: colors),
+                startPoint: .zero, endPoint: CGPoint(x: size.width, y: 0))
+            if scheme == .dark {
+                var glow = context
+                glow.addFilter(.blur(radius: 3))
+                glow.opacity = 0.5
+                glow.stroke(line, with: gradient, style: StrokeStyle(lineWidth: 2.8, lineCap: .round))
+            }
+            context.stroke(line, with: gradient, style: StrokeStyle(lineWidth: 1.7, lineCap: .round, lineJoin: .round))
         }
     }
 
@@ -160,7 +225,7 @@ struct SourceVisualizer:View, @MainActor Animatable {
                 let point = Double(index) / Double(max(1, samples.count - 1))
                 let distance = abs(point - fraction) / 0.23
                 let focus = CGFloat(max(0, 1 - distance))
-                return min(1, amplitude * (0.68 + 0.78 * pulse * focus * focus))
+                return min(1, amplitude * (0.58 + 1.75 * pulse * (0.36 + 0.64 * focus)))
             }
             var base = context
             base.opacity = scheme == .dark ? 0.32 : 0.26
@@ -230,7 +295,7 @@ enum PlayerBackdrop {
     }
 }
 struct VisualizerSettingsView:View {
-    @AppStorage("visualizerStyle") private var style = "Mirror"
+    @AppStorage("visualizerStyle") private var style = "Flow"
     @AppStorage("visualizerColor") private var tint = "Mint"
     @AppStorage("playerBackdrop") private var backdrop = "Artwork"
     @AppStorage("waveformMotion") private var motion = true
@@ -248,7 +313,7 @@ struct VisualizerSettingsView:View {
             Section("Waveform") {
                 SourceVisualizer(progress:0.55, allowMotion:false).frame(height:64)
                 Toggle("Move with the music", isOn: $motion)
-                Picker("Shape",selection:$style) { ForEach(["Off","Wave","Mirror","Bars","Orbit"],id:\.self) { Text($0 == "Orbit" ? "Bars (legacy Orbit)" : $0) } }
+                Picker("Shape",selection:$style) { ForEach(["Flow","Wave","Mirror","Bars","Off","Orbit"],id:\.self) { Text($0 == "Orbit" ? "Bars (legacy Orbit)" : $0) } }
                 Picker("Color",selection:$tint) { ForEach(["Mint","Rose","Ocean","Amber","Rainbow","Custom"],id:\.self) { Text($0) } }
                 ColorPicker("Custom color",selection:custom,supportsOpacity:false)
             }
@@ -256,7 +321,7 @@ struct VisualizerSettingsView:View {
                 Picker("Background",selection:$backdrop) { ForEach(PlayerBackdrop.names,id:\.self) { Text($0) } }.accessibilityIdentifier("playerBackdropPicker")
             }
             Section {
-                Text("Drag the waveform to seek. It reacts to accents and bass in the decoded song and rests when paused. Turn off motion for a steady waveform.").font(.footnote)
+                Text("Flow draws a moving trail from the song’s bass and accents. Drag anywhere across the waveform to seek. Turn off motion to hold the display steady.").font(.footnote)
                 Text("Use your iPhone volume buttons or Control Center to adjust volume.").font(.footnote)
             }
         }.navigationTitle("Player appearance").soundlySurface()

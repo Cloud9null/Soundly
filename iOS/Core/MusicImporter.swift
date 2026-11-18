@@ -9,6 +9,7 @@ struct ImportProgress: Sendable {
     var imported = 0
     var duplicates = 0
     var restored = 0
+    var lyrics = 0
     var failures = 0
     var scanning = true
     var cancelled = false
@@ -17,14 +18,21 @@ struct ImportProgress: Sendable {
 
 actor MusicImporter {
     let writer: LibraryWriter
-    init(writer: LibraryWriter) { self.writer = writer }
+    let lyricsStore: LyricsStore
+    init(writer: LibraryWriter, lyricsStore: LyricsStore = .shared) {
+        self.writer = writer
+        self.lyricsStore = lyricsStore
+    }
     static let extensions: Set<String> = ["flac","m4a","alac","wav","aif","aiff"]
 
     func run(_ roots: [URL], progress: @Sendable (ImportProgress) async -> Void) async -> ImportProgress {
         var state = ImportProgress()
         let fm = FileManager.default
+        let selectedLyrics = Dictionary(grouping: Set(roots.filter(Self.isLRC)), by: Self.sidecarKey)
+        var matchedLyrics: Set<URL> = []
         for root in roots {
             if Task.isCancelled { state.cancelled = true; break }
+            if Self.isLRC(root) { continue }
             let scoped = root.startAccessingSecurityScopedResource()
             defer { if scoped { root.stopAccessingSecurityScopedResource() } }
             do {
@@ -34,6 +42,9 @@ actor MusicImporter {
                     // Enumeration stays on this worker actor; files are processed incrementally.
                     var enumerationFailed = false
                     guard let enumerator = fm.enumerator(at: root, includingPropertiesForKeys: [.isRegularFileKey,.isSymbolicLinkKey], options:[.skipsHiddenFiles,.skipsPackageDescendants], errorHandler: { _, _ in enumerationFailed = true; return true }) else { throw CocoaError(.fileReadNoPermission) }
+                    // Cache one sibling directory at a time while the folder grant is active.
+                    var currentDirectory: URL?
+                    var siblings: [String: [URL]] = [:]
                     while let file = enumerator.nextObject() as? URL {
                         try Task.checkCancellation()
                         let v = try file.resourceValues(forKeys:[.isRegularFileKey,.isSymbolicLinkKey])
@@ -41,17 +52,32 @@ actor MusicImporter {
                               Self.extensions.contains(file.pathExtension.lowercased()) else { continue }
                         state.discovered += 1
                         await progress(state)
-                        await importOne(file, folder: root.lastPathComponent, state: &state)
+                        let directory = file.deletingLastPathComponent()
+                        if directory != currentDirectory {
+                            currentDirectory = directory
+                            let entries = (try? fm.contentsOfDirectory(at: directory,
+                                includingPropertiesForKeys: nil, options: .skipsHiddenFiles)) ?? []
+                            siblings = Dictionary(grouping: entries.filter(Self.isLRC), by: Self.sidecarKey)
+                        }
+                        let candidates = siblings[Self.sidecarKey(file)] ?? []
+                        await importOne(file, folder: root.lastPathComponent, sidecars: candidates, state: &state)
                         await progress(state)
                     }
                     if enumerationFailed { state.failures += 1 }
                 } else if Self.extensions.contains(root.pathExtension.lowercased()) {
                     state.discovered += 1
-                    await importOne(root, folder: "Selected files", state: &state)
+                    let candidates = selectedLyrics[Self.sidecarKey(root)] ?? []
+                    matchedLyrics.formUnion(candidates)
+                    await importOne(root, folder: "Selected files", sidecars: candidates, state: &state)
                 } else { state.failures += 1 }
             } catch is CancellationError { state.cancelled = true; break }
             catch { state.failures += 1; if state.issues.count < 20 { state.issues.append(root.lastPathComponent + ": " + error.localizedDescription) } }
             await progress(state)
+        }
+        if !Task.isCancelled {
+            for source in Set(selectedLyrics.values.flatMap { $0 }).subtracting(matchedLyrics) {
+                Self.recordIssue("Select the matching audio with this LRC file: " + source.lastPathComponent, in: &state)
+            }
         }
         state.scanning = false
         state.cancelled = state.cancelled || Task.isCancelled
@@ -59,7 +85,33 @@ actor MusicImporter {
         return state
     }
 
-    private func importOne(_ source: URL, folder: String, state: inout ImportProgress) async {
+    private static func isLRC(_ url: URL) -> Bool { url.pathExtension.lowercased() == "lrc" }
+
+    private static func sidecarKey(_ url: URL) -> String {
+        let folder = url.deletingLastPathComponent().standardizedFileURL.path
+        let stem = url.deletingPathExtension().lastPathComponent.precomposedStringWithCanonicalMapping.lowercased()
+        return folder + "/" + stem
+    }
+
+    private static func recordIssue(_ message: String, in state: inout ImportProgress) {
+        state.failures += 1
+        if state.issues.count < 20 { state.issues.append(message) }
+    }
+
+    private func attachLyrics(_ candidates: [URL], to hash: String, state: inout ImportProgress) async {
+        guard !Task.isCancelled, !candidates.isEmpty else { return }
+        guard candidates.count == 1, let source = candidates.first else {
+            Self.recordIssue("Multiple matching LRC files. Choose one in Lyrics.", in: &state)
+            return
+        }
+        do {
+            if try await lyricsStore.importSidecar(hash, from: source) { state.lyrics += 1 }
+        } catch {
+            Self.recordIssue(source.lastPathComponent + ": Could not import UTF-8 LRC (up to 1 MiB).", in: &state)
+        }
+    }
+
+    private func importOne(_ source: URL, folder: String, sidecars: [URL], state: inout ImportProgress) async {
         defer { state.processed += 1 }
         do {
             try Task.checkCancellation()
@@ -69,7 +121,9 @@ actor MusicImporter {
             let existing = try await writer.existingFilename(hash)
             if let existing,
                FileManager.default.fileExists(atPath:try LibraryPaths.directory("Music").appendingPathComponent(existing).path) {
-                state.duplicates += 1; return
+                state.duplicates += 1
+                await attachLyrics(sidecars, to: hash, state: &state)
+                return
             }
             let metadata = try await MetadataReader.read(staging,fallbackTitle:source.deletingPathExtension().lastPathComponent)
             try Task.checkCancellation()
@@ -90,6 +144,7 @@ actor MusicImporter {
                 if created { try? FileManager.default.removeItem(at: destination) }
                 throw error
             }
+            await attachLyrics(sidecars, to: hash, state: &state)
         } catch is CancellationError { state.cancelled = true }
         catch { state.failures += 1; if state.issues.count < 20 { state.issues.append(source.lastPathComponent + ": " + error.localizedDescription) } }
     }
@@ -131,7 +186,7 @@ final class ImportController {
         task = Task {
             let importer = await Task.detached { MusicImporter(writer:LibraryWriter(modelContainer:container)) }.value
             let final = await importer.run(urls) { [weak self] value in await self?.update(value) }
-            report = "\(final.imported) imported · \(final.duplicates) duplicates · \(final.restored) restored · \(final.failures) errors" + (final.cancelled ? " · Cancelled" : "")
+            report = "\(final.imported) imported · \(final.duplicates) duplicates · \(final.restored) restored · \(final.lyrics) lyrics · \(final.failures) errors" + (final.cancelled ? " · Cancelled" : "")
             running = false
         }
     }

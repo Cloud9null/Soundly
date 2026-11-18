@@ -11,7 +11,7 @@ struct NowPlayingView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
     @Environment(\.soundlySurface) private var surface
-    @AppStorage("visualizerStyle") private var visualizerStyle = "Mirror"
+    @AppStorage("visualizerStyle") private var visualizerStyle = "Flow"
     @AppStorage("playerBackdrop") private var backdrop = "Artwork"
     @State private var position = 0.0
     @State private var dragging = false
@@ -149,10 +149,12 @@ struct NowPlayingView: View {
                 let fraction = min(1,max(0,position/max(0.001,playback.audio.duration)))
                 ZStack(alignment:.leading) {
                     SourceVisualizer(progress:fraction, allowMotion: !dragging && !quality && !lyrics && !visualizerSettings && !queue && !artwork && playlistSong == nil)
-                    Capsule().fill(Color.primary.opacity(dragging ? 0.95 : 0.7))
-                        .frame(width:dragging ? 3 : 1.5,height:dragging ? 44 : 32)
-                        .offset(x:max(0,min(geometry.size.width-3,geometry.size.width*fraction-1.5)))
-                        .animation(.easeOut(duration:0.16),value:dragging)
+                    if visualizerStyle != "Flow" || dragging {
+                        Capsule().fill(Color.primary.opacity(dragging ? 0.95 : 0.7))
+                            .frame(width:dragging ? 3 : 1.5,height:dragging ? 44 : 32)
+                            .offset(x:max(0,min(geometry.size.width-3,geometry.size.width*fraction-1.5)))
+                            .animation(.easeOut(duration:0.16),value:dragging)
+                    }
                 }.frame(maxHeight:.infinity).contentShape(Rectangle())
                     .animation(dragging ? nil : .linear(duration:0.5),value:position)
                     .gesture(DragGesture(minimumDistance:0).onChanged { value in
@@ -195,12 +197,14 @@ struct NowPlayingView: View {
             iconButton("Repeat",symbol:playback.queue.repeatMode == .one ? "repeat.1" : "repeat",id:"repeatButton",active:playback.queue.repeatMode != .off) { playback.cycleRepeat() }
                 .accessibilityValue(playback.queue.repeatMode.rawValue)
             Spacer()
+            iconButton("Lyrics", symbol: "quote.bubble", id: "openLyrics", active: lyrics) { lyrics = true }
+                .disabled(playback.current == nil)
+            Spacer()
             SystemRoutePicker().frame(width:44,height:44).accessibilityLabel("Choose audio output")
             Spacer()
             iconButton("Queue",symbol:"list.bullet",id:"openQueue") { queue = true }
             Spacer()
             Menu {
-                Button("Lyrics",systemImage:"text.quote") { lyrics = true }.accessibilityIdentifier("openLyrics")
                 Button("Player appearance",systemImage:"paintpalette") { visualizerSettings = true }
                 Button("Add to playlist", systemImage: "text.badge.plus") { playlistSong = songModel() }
                     .disabled(playback.current == nil)
@@ -209,7 +213,7 @@ struct NowPlayingView: View {
                     .disabled(playback.current == nil)
             } label: { Image(systemName:"ellipsis").font(.title3).frame(width:44,height:44) }
                 .accessibilityLabel("More playback options").accessibilityIdentifier("playbackMenu")
-        }.padding(.horizontal,12).padding(.vertical,8).foregroundStyle(.primary)
+        }.padding(.horizontal,8).padding(.vertical,8).foregroundStyle(.primary)
             .glassEffect(in:.capsule).padding(.horizontal,20).padding(.bottom,8)
     }
     private func iconButton(_ title:String,symbol:String,id:String,active:Bool = false,action:@escaping()->Void)->some View {

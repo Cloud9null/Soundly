@@ -1,52 +1,35 @@
 import XCTest
 
 @MainActor final class ExpansionUITests:XCTestCase {
-    func testSmartQueueAndOfflineLyricsMenu() {
-        let app = XCUIApplication();app.launchArguments = ["--soundly-fixtures"];app.launch()
-        XCTAssertTrue(app.navigationBars["Listen"].waitForExistence(timeout:30))
-        app.tabBars.buttons["Library"].tap();app.buttons["libraryBrowse"].tap();app.buttons["Smart Playlists"].tap()
-        XCTAssertTrue(app.navigationBars["Smart Playlists"].waitForExistence(timeout:5))
-        let rule = app.buttons["smartRule-Never played"];XCTAssertTrue(rule.waitForExistence(timeout:5));rule.tap()
-        XCTAssertTrue(app.navigationBars["Never played"].waitForExistence(timeout:5))
+    func testSyncedLyricsShortcutFromNowPlaying() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--soundly-fixtures", "--soundly-lyrics"]
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Listen"].waitForExistence(timeout: 30))
+        app.tabBars.buttons["Library"].tap()
         app.staticTexts["Reference 1"].firstMatch.tap()
-        let miniPlayer = app.buttons["miniPlayerOpen"];XCTAssertTrue(miniPlayer.waitForExistence(timeout:10))
-        var openPoint:CGPoint?
-        let selected = NSPredicate { _,_ in
-            guard miniPlayer.exists, (miniPlayer.value as? String)?.hasPrefix("Reference 1") == true else { return false }
-            let frame = miniPlayer.frame;let window = app.frame
-            guard frame.minX.isFinite,frame.minY.isFinite,frame.width.isFinite,frame.height.isFinite,
-                  frame.width >= 44,frame.height >= 44,window.contains(frame) else { return false }
-            openPoint = CGPoint(x:frame.minX+frame.width*0.2-window.minX,y:frame.midY-window.minY)
-            return true
-        }
-        XCTAssertEqual(XCTWaiter.wait(for:[XCTNSPredicateExpectation(predicate:selected,object:miniPlayer)],timeout:20),.completed)
-        guard let openPoint else { return }
-        // Use the app window after the native accessory reports a finite frame. UIKit may omit its activation point during layout.
-        app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:openPoint.x,dy:openPoint.y)).tap()
-        XCTAssertTrue(app.buttons["playbackMenu"].waitForExistence(timeout:10))
-        app.buttons["playbackMenu"].tap()
-        let identifiedLyrics = app.buttons["openLyrics"]
-        let lyrics = identifiedLyrics.waitForExistence(timeout:2) ? identifiedLyrics : app.buttons["Lyrics"]
-        XCTAssertTrue(lyrics.waitForExistence(timeout:5))
-        var lyricsPoint:CGPoint?
-        let menuSettled = NSPredicate { _,_ in
-            guard lyrics.exists else { return false }
-            let frame = lyrics.frame;let window = app.frame
-            guard frame.minX.isFinite,frame.minY.isFinite,frame.width.isFinite,frame.height.isFinite,
-                  frame.width > 0,frame.height > 0,window.contains(frame) else { return false }
-            lyricsPoint = CGPoint(x:frame.midX-window.minX,y:frame.midY-window.minY);return true
-        }
-        XCTAssertEqual(XCTWaiter.wait(for:[XCTNSPredicateExpectation(predicate:menuSettled,object:lyrics)],timeout:10),.completed)
-        guard let lyricsPoint else { return }
-        app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:lyricsPoint.x,dy:lyricsPoint.y)).tap()
-        XCTAssertTrue(app.navigationBars["Lyrics"].waitForExistence(timeout:5))
-        XCTAssertTrue(app.staticTexts["Your words, offline"].waitForExistence(timeout:5))
-        let shot = XCTAttachment(screenshot:app.screenshot());shot.name = "Offline lyrics empty state";shot.lifetime = .keepAlways;add(shot)
+
+        let lyrics = app.buttons["openLyrics"]
+        XCTAssertTrue(lyrics.waitForExistence(timeout: 10))
+        lyrics.tap()
+        XCTAssertTrue(app.navigationBars["Synced Lyrics"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["Opening line"].exists)
+        app.buttons["Second line"].tap()
+        let activeLine = NSPredicate(format: "value == %@", "Current line")
+        let highlight = XCTNSPredicateExpectation(predicate: activeLine, object: app.buttons["Second line"])
+        XCTAssertEqual(XCTWaiter.wait(for: [highlight], timeout: 8), .completed)
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "Synced lyrics"
+        shot.lifetime = .keepAlways
+        add(shot)
     }
     func testPlaylistCreationTrackSelectionAndPersistence() {
         let app = XCUIApplication(); app.launchArguments = ["--soundly-fixtures"]; app.launch()
         XCTAssertTrue(app.navigationBars["Listen"].waitForExistence(timeout:30))
-        app.tabBars.buttons["Library"].tap(); app.buttons["libraryBrowse"].tap(); app.buttons["Playlists"].tap()
+        app.tabBars.buttons["Library"].tap()
+        app.buttons["libraryAdd"].tap()
+        app.buttons["New playlist"].tap()
+        XCTAssertTrue(app.navigationBars["Playlists"].waitForExistence(timeout: 8))
         let name = "Travel-"+String(UUID().uuidString.prefix(6))
         app.textFields["playlistName"].tap(); app.textFields["playlistName"].typeText(String(name))
         app.buttons["createPlaylist"].tap(); app.buttons[String(name)].tap()

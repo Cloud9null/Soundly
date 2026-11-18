@@ -78,6 +78,13 @@ final class ExpansionTests:XCTestCase {
         XCTAssertEqual(waveform.pulse(at: 0.12), 0)
         XCTAssertGreaterThan(waveform.pulse(at: 0.26), 0.5)
         XCTAssertLessThan(waveform.pulse(at: 0.95), 0.03)
+        let before = waveform.flow(at: 0.12)
+        let hit = waveform.flow(at: 0.26)
+        let trail = waveform.flow(at: 0.61)
+        XCTAssertEqual(before.max(), 0)
+        XCTAssertGreaterThan(hit.max() ?? 0, 0.75)
+        XCTAssertGreaterThan(trail.max() ?? 0, 0.45)
+        XCTAssertLessThan(trail.first ?? 1, trail.max() ?? 0)
     }
 }
 
