@@ -60,8 +60,8 @@ public struct SignalPathAssessment: Equatable, Sendable {
 }
 
 /// Pure policy, deliberately incapable of granting external bit verification.
-/// An integer/float representation change is reported conservatively as conversion;
-/// it is not a claim that the conversion necessarily lost information.
+/// File decoding can represent normalized 16–24-bit integers exactly in Float32.
+/// That format fact alone says nothing about the samples at the physical output.
 public enum SignalPathEvaluator {
     public static func assess(_ path: SignalPathSnapshot) -> SignalPathAssessment {
         guard path.sessionIsActive else {
@@ -90,15 +90,19 @@ public enum SignalPathEvaluator {
         if Set(channels).count > 1 {
             return result(.converted, "Observed channel counts differ; channel mapping or mixing is indicated.")
         }
-        for (first, second) in [(path.source, path.decoderOutput), (path.decoderOutput, path.engineOutput), (path.engineOutput,path.deviceOutput)] {
-            if let first, let second {
-                if first.representation != .unknown, second.representation != .unknown,
-                   first.representation != second.representation {
-                    return result(.converted, "PCM representation changes between integer and floating point. Bit identity is not established.")
-                }
-                if let a = first.bitDepth, let b = second.bitDepth, a != b {
-                    return result(.converted, "PCM sample width changes between stages. Bit identity is not established.")
-                }
+        let stages = [(path.source, path.decoderOutput), (path.decoderOutput, path.engineOutput), (path.engineOutput, path.deviceOutput)]
+        for (index, formats) in stages.enumerated() {
+            guard let first = formats.0, let second = formats.1 else { continue }
+            if first.representation == .unknown || second.representation == .unknown { continue }
+            if index == 0, first.representation == .signedInteger, let bits = first.bitDepth, bits <= 24,
+               second.representation == .floatingPoint, second.bitDepth == 32 {
+                continue
+            }
+            if first.representation != second.representation {
+                return result(.converted, "PCM representation changes between integer and floating point. Bit identity is not established.")
+            }
+            if let a = first.bitDepth, let b = second.bitDepth, a != b {
+                return result(.converted, "PCM sample width changes between stages. Bit identity is not established.")
             }
         }
         if path.sourceIsLossless == false {
@@ -108,12 +112,12 @@ public enum SignalPathEvaluator {
               path.processing == .bypassed, path.engineGain == 1,
               let rate = path.sessionSampleRate, rate.isFinite, rate > 0,
               let count = path.sessionChannels, count > 0,
-              formats.allSatisfy({ $0.bitDepth != nil && $0.representation != .unknown }),
+              observed.allSatisfy({ $0.bitDepth != nil && $0.representation != .unknown }),
               [.builtInSpeaker, .builtInReceiver, .wiredHeadphones, .usbAudio].contains(path.route) else {
             return result(.unknown, "One or more stages or the transport are unverified. No end-to-end digital capture is available.")
         }
         return result(.nativeRateUnverified,
-                      "All observed rates match. iOS does not expose every downstream processing stage, effective DAC bit depth, or sample identity. External digital capture is required; system volume alone is not proof of unity digital gain.")
+                      "The observed sample rates match with optional processing bypassed. External digital capture is required to verify the samples delivered to the device.")
     }
 
     private static func result(_ status: SignalPathAssessment.Status, _ explanation: String) -> SignalPathAssessment {

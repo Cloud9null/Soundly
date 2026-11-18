@@ -77,11 +77,19 @@ final class SignalPathTests: XCTestCase {
         XCTAssertEqual(SignalPathEvaluator.assess(path).status, .converted)
     }
 
-    func testFloatDecoderIsNotMistakenForOriginalIntegerPCM() throws {
+    func testFloatDecoderCanExactlyRepresent24BitPCMAtNativeRate() throws {
         var path = try native()
         path.decoderOutput = try pcm(bits: 32, representation: .floatingPoint)
         path.engineOutput = path.decoderOutput
+        XCTAssertEqual(SignalPathEvaluator.assess(path).status, .nativeRateUnverified)
+        path.source = try pcm(bits: 32)
         XCTAssertEqual(SignalPathEvaluator.assess(path).status, .converted)
+    }
+
+    func testPCMRateUsesAllChannelsAndAdvertisedSampleWidth() throws {
+        XCTAssertEqual(try pcm(48_000, bits: 32, representation: .floatingPoint).payloadKilobitsPerSecond, 3072)
+        XCTAssertEqual(try pcm(44_100, bits: 16).payloadKilobitsPerSecond, 1411.2)
+        XCTAssertNil(try pcm(bits: nil).payloadKilobitsPerSecond)
     }
 
     func testWidthChangeIsReportedWithoutAssumingLoss() throws {

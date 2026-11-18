@@ -12,6 +12,7 @@ struct PlaybackTrack: Identifiable, Codable, Equatable, Sendable {
 }
 
 struct AudioObservation: Sendable {
+    var observedAt = ProcessInfo.processInfo.systemUptime
     var elapsed = 0.0
     var duration = 0.0
     var playing = false

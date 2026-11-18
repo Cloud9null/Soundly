@@ -59,11 +59,25 @@ final class ExpansionTests:XCTestCase {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString+".wav")
         defer { try? FileManager.default.removeItem(at:url) }
         let format = try XCTUnwrap(AVAudioFormat(standardFormatWithSampleRate:44100,channels:1))
-        let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat:format,frameCapacity:256)); buffer.frameLength = 256
-        for i in 0..<256 { buffer.floatChannelData![0][i] = i < 128 ? 0 : 0.5 }
-        do { let file = try AVAudioFile(forWriting:url,settings:format.settings); try file.write(from:buffer) }
-        let values = try SourceEnvelope.analyze(url)
-        XCTAssertEqual(values.count,256); XCTAssertEqual(values.first,0); XCTAssertEqual(values.last,0.5)
+        let frames: AVAudioFrameCount = 44_100
+        let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames))
+        buffer.frameLength = frames
+        let channel = try XCTUnwrap(buffer.floatChannelData)[0]
+        for i in 0..<Int(frames) {
+            let time = Double(i) / format.sampleRate
+            channel[i] = (0.25..<0.42).contains(time) ? Float(0.6 * sin(2 * .pi * 90 * time)) : 0
+        }
+        do {
+            let file = try AVAudioFile(forWriting: url, settings: format.settings)
+            try file.write(from: buffer)
+        }
+        let waveform = try SourceEnvelope.analyze(url)
+        XCTAssertEqual(waveform.levels.count, 100)
+        XCTAssertEqual(waveform.levels.first, 0)
+        XCTAssertEqual(waveform.levels.last, 0)
+        XCTAssertEqual(waveform.pulse(at: 0.12), 0)
+        XCTAssertGreaterThan(waveform.pulse(at: 0.26), 0.5)
+        XCTAssertLessThan(waveform.pulse(at: 0.95), 0.03)
     }
 }
 

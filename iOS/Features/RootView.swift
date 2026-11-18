@@ -159,6 +159,7 @@ struct SongResults: View {
     let favorites:Bool
     let select:(Song)->Void
     @State private var saveError = false
+    @State private var playlistSong: Song?
     init(search:String,mode:String,favorites:Bool,newest:Bool,select:@escaping(Song)->Void) {
         self.mode = mode; self.select = select; self.search = search; self.favorites = favorites
         let predicate = #Predicate<Song> { song in
@@ -190,6 +191,7 @@ struct SongResults: View {
                 }
             }
         }.listStyle(.plain).soundlySurface()
+        .sheet(item: $playlistSong) { song in AddToPlaylistView(song: song) }
         .alert("Could not save favorite",isPresented:$saveError) { Button("OK",role:.cancel) {} }
     }
     private func row(_ song:Song,number:Int? = nil)->some View {
@@ -205,6 +207,7 @@ struct SongResults: View {
                 Spacer(); if song.favorite { Image(systemName:"heart.fill").foregroundStyle(.tint) }
             }.padding(.vertical,4)
         }.buttonStyle(.plain).listRowBackground(Color.clear)
+        .contextMenu { Button("Add to playlist", systemImage: "text.badge.plus") { playlistSong = song } }
         .swipeActions { Button(song.favorite ? "Unfavorite" : "Favorite",systemImage:"heart") {
             song.favorite.toggle()
             do { try context.save() } catch { context.rollback(); saveError = true }
@@ -322,7 +325,7 @@ struct SettingsView: View {
                 Text("Music stays on this device. No external artwork or metadata lookups. Imported music is excluded from device backups; keep your original files.").font(.footnote)
             }
             Section("About") {
-                LabeledContent("Version",value:"0.12.0 (12)")
+                LabeledContent("Version",value:"0.13.0 (13)")
                 Text("Built with Apple frameworks. No third-party runtime code.")
             }
         }.soundlySurface().navigationTitle("Settings")

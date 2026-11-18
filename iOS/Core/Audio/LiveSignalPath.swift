@@ -19,9 +19,19 @@ struct LiveSignalPath: Sendable {
             : "Sample-rate conversion observed"
     }
     var assessment: SignalPathAssessment { SignalPathEvaluator.assess(snapshot) }
+    var outputRate: Double? {
+        guard snapshot.sessionIsActive else { return nil }
+        return snapshot.deviceOutput?.sampleRate ?? snapshot.sessionSampleRate.flatMap { $0.isFinite && $0 > 0 ? $0 : nil }
+    }
+
+    var outputBitrate: Double? {
+        guard snapshot.sessionIsActive else { return nil }
+        return snapshot.deviceOutput?.payloadKilobitsPerSecond
+    }
+
     var rateComparison:String {
         guard snapshot.sessionIsActive,let source = snapshot.source?.sampleRate,
-              let rate = snapshot.deviceOutput?.sampleRate ?? snapshot.sessionSampleRate,source > 0,rate > 0 else { return "Source → iOS output: not observed" }
+              let rate = outputRate,source > 0 else { return "Source → iOS output: not observed" }
         let from = String(format:"%.1f kHz",source/1000)
         let to = String(format:"%.1f kHz",rate/1000)
         return from+" → "+to+(source == rate ? " · Same endpoint rate" : " · Resampled")

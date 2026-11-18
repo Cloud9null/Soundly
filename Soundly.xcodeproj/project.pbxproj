@@ -369,8 +369,8 @@
 "ENABLE_USER_SCRIPT_SANDBOXING" = "NO";
 "ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
 "ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES" = ("AppIcon-Aurora","AppIcon-Pulse","AppIcon-Orbit","AppIcon-Signature","AppIcon-Glacier","AppIcon-NeonS","AppIcon-Circuit","AppIcon-Hologram","AppIcon-Midnight");
-"MARKETING_VERSION" = "0.12.0";
-"CURRENT_PROJECT_VERSION" = "12";
+"MARKETING_VERSION" = "0.13.0";
+"CURRENT_PROJECT_VERSION" = "13";
 };
 };
 "62BC06C1F823C5910A16E306" = {
@@ -392,8 +392,8 @@
 "ENABLE_USER_SCRIPT_SANDBOXING" = "NO";
 "ASSETCATALOG_COMPILER_APPICON_NAME" = "AppIcon";
 "ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES" = ("AppIcon-Aurora","AppIcon-Pulse","AppIcon-Orbit","AppIcon-Signature","AppIcon-Glacier","AppIcon-NeonS","AppIcon-Circuit","AppIcon-Hologram","AppIcon-Midnight");
-"MARKETING_VERSION" = "0.12.0";
-"CURRENT_PROJECT_VERSION" = "12";
+"MARKETING_VERSION" = "0.13.0";
+"CURRENT_PROJECT_VERSION" = "13";
 };
 };
 "88B650FBEC2E7831CB0D3BDC" = {

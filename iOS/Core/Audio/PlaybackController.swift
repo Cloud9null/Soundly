@@ -55,11 +55,12 @@ final class PlaybackController {
             }
         }
     }
-    func play(_ song:Song,within songs:[Song]) {
+    func play(_ song:Song,within songs:[Song],shuffle:Bool? = nil) {
         resumeAfterInterruption = false
         let tracks = songs.filter(\.available).map(Self.track)
         guard tracks.contains(where:{$0.id == song.id}) else { error = "The local file is missing. Reimport it to restore the copy."; return }
         queue.replace(tracks,starting:song.id)
+        if let shuffle { queue.shuffle = shuffle }
         load()
     }
     private static func track(_ song:Song) -> PlaybackTrack {

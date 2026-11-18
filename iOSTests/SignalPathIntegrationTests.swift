@@ -14,7 +14,7 @@ final class SignalPathIntegrationTests: XCTestCase {
         let decoded = try XCTUnwrap(SourceFormatInspector.pcm(file.processingFormat))
         XCTAssertEqual(decoded.representation,.floatingPoint); XCTAssertEqual(decoded.bitDepth,32)
         let snapshot = SignalPathSnapshot(source:info.pcm,sourceIsLossless:info.lossless,decoderOutput:decoded,engineOutput:decoded,processing:.bypassed,engineGain:1,sessionIsActive:true,sessionSampleRate:96000,sessionChannels:2,route:.usbAudio)
-        XCTAssertEqual(SignalPathEvaluator.assess(snapshot).status,.converted)
+        XCTAssertEqual(SignalPathEvaluator.assess(snapshot).status,.nativeRateUnverified)
     }
     func testAllExposedPortsAndMultipleOutputFallback() {
         XCTAssertEqual(LiveSignalPath.route([AVAudioSession.Port.usbAudio.rawValue]),.usbAudio)

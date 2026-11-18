@@ -21,6 +21,7 @@ struct NowPlayingView: View {
     @State private var visualizerSettings = false
     @State private var queue = false
     @State private var artwork = false
+    @State private var playlistSong: Song?
 
     var body: some View {
         GeometryReader { geometry in
@@ -51,6 +52,7 @@ struct NowPlayingView: View {
         .sheet(isPresented:$visualizerSettings) {
             NavigationStack { VisualizerSettingsView().toolbar { ToolbarItem(placement:.confirmationAction) { Button("Done") { visualizerSettings = false } } } }
         }
+        .sheet(item: $playlistSong) { song in AddToPlaylistView(song: song) }
         .sheet(isPresented:$lyrics) {
             NavigationStack { LyricsView().toolbar { ToolbarItem(placement:.confirmationAction) { Button("Done") { lyrics = false } } } }
         }
@@ -120,15 +122,20 @@ struct NowPlayingView: View {
             Button { quality = true } label: {
                 HStack(spacing:6) {
                     Image(systemName:"waveform")
-                    Text(sourceQuality).lineLimit(1).minimumScaleFactor(0.8)
+                    Text(qualityLabel).lineLimit(1).minimumScaleFactor(0.8)
                     Image(systemName:"chevron.down").font(.system(size:9,weight:.semibold))
                 }.font(.caption.weight(.medium)).padding(.vertical,7).padding(.horizontal,10)
                     .glassEffect(in:.capsule)
             }.buttonStyle(.plain).foregroundStyle(.secondary).accessibilityLabel("Audio quality and signal path")
-                .accessibilityValue(sourceQuality)
+                .accessibilityValue(qualityLabel)
                 .accessibilityIdentifier("audioQualityButton")
         }
     }
+    private var qualityLabel: String {
+        guard !playback.busy, let rate = playback.audio.signalPath.outputRate else { return sourceQuality }
+        return sourceQuality + "  →  " + SignalPathView.rate(rate)
+    }
+
     private var sourceQuality:String {
         let report = playback.audio.signalPath
         guard !playback.busy,playback.current != nil,let pcm = report.snapshot.source else {
@@ -141,7 +148,7 @@ struct NowPlayingView: View {
             GeometryReader { geometry in
                 let fraction = min(1,max(0,position/max(0.001,playback.audio.duration)))
                 ZStack(alignment:.leading) {
-                    SourceVisualizer(progress:fraction)
+                    SourceVisualizer(progress:fraction, allowMotion: !dragging && !quality && !lyrics && !visualizerSettings && !queue && !artwork && playlistSong == nil)
                     Capsule().fill(Color.primary.opacity(dragging ? 0.95 : 0.7))
                         .frame(width:dragging ? 3 : 1.5,height:dragging ? 44 : 32)
                         .offset(x:max(0,min(geometry.size.width-3,geometry.size.width*fraction-1.5)))
@@ -195,6 +202,8 @@ struct NowPlayingView: View {
             Menu {
                 Button("Lyrics",systemImage:"text.quote") { lyrics = true }.accessibilityIdentifier("openLyrics")
                 Button("Player appearance",systemImage:"paintpalette") { visualizerSettings = true }
+                Button("Add to playlist", systemImage: "text.badge.plus") { playlistSong = songModel() }
+                    .disabled(playback.current == nil)
                 Button("Audio quality",systemImage:"waveform") { quality = true }
                 Button("Stop playback",systemImage:"stop") { playback.stop() }
                     .disabled(playback.current == nil)

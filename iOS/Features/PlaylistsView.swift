@@ -18,6 +18,17 @@ struct PlaylistDocument:FileDocument {
 struct PlaylistExchange:Codable,Sendable {
     var soundlyVersion = 1
     var playlists:[LocalPlaylist]
+    static func saved(_ bytes: Data) throws -> [LocalPlaylist] {
+        if bytes.isEmpty { return [] }
+        return try decode(bytes).playlists
+    }
+
+    static func encode(_ lists: [LocalPlaylist]) throws -> Data {
+        let bytes = try JSONEncoder().encode(Self(playlists: lists))
+        _ = try decode(bytes)
+        return bytes
+    }
+
     static func decode(_ bytes:Data)throws->Self {
         guard bytes.count <= 2*1024*1024 else { throw CocoaError(.fileReadTooLarge) }
         let value = try JSONDecoder().decode(Self.self,from:bytes)
@@ -45,6 +56,12 @@ struct PlaylistsView:View {
     @State private var message:String?
     @State private var busy = false
     @State private var pending:PendingM3U?
+    @State private var pendingJSON: PlaylistExchange?
+    @State private var addingTracks: LocalPlaylist?
+    @State private var renameID: UUID?
+    @State private var proposedName = ""
+    @State private var renaming = false
+    @State private var detailMessage: String?
     @State private var incomingName = ""
     @State private var exportType:UTType = .json
     @State private var exportName = "Soundly-playlists"
@@ -55,17 +72,29 @@ struct PlaylistsView:View {
                 Button("Create playlist") {
                     let title = name.trimmingCharacters(in:.whitespacesAndNewlines)
                     guard !title.isEmpty,title.count <= 200 else { return }
-                    lists.append(LocalPlaylist(name:title)); name = ""; naming = false; save()
+                    if save(candidate: lists + [LocalPlaylist(name: title)]) {
+                        name = ""
+                        naming = false
+                    }
                 }.accessibilityIdentifier("createPlaylist")
             }
             Section {
                 ForEach($lists) { $list in
                     NavigationLink {
                         List {
-                            TextField("Name",text:$list.name).onSubmit { save() }
+                            Section {
+                                HStack(spacing: 12) {
+                                    Button("Play", systemImage: "play.fill") { play(list, shuffled: false) }
+                                    Button("Shuffle", systemImage: "shuffle") { play(list, shuffled: true) }
+                                }
+                                .buttonStyle(.glass)
+                                .disabled(!resolved(list).contains(where: \.available))
+                                Button("Add songs", systemImage: "plus") { addingTracks = list }
+                            }
+                            let tracks = tracksByHash
                             Section("Tracks · \(list.hashes.count)") {
                                 ForEach(Array(list.hashes.enumerated()),id:\.offset) { index,hash in
-                                    if let song = songs.first(where:{$0.fileHash == hash}) {
+                                    if let song = tracks[hash] {
                                         Button(song.title) { playback.play(song,within:resolved(list)) }.disabled(!song.available)
                                             .contextMenu {
                                                 if let url = musicURL(song) { ShareLink(item:url) { Label("Share music file",systemImage:"square.and.arrow.up") } }
@@ -85,33 +114,80 @@ struct PlaylistsView:View {
                                     Button("Retry matching") { retryMatching(list) }.disabled(busy)
                                 }
                             }
-                            Section {
+                            Section("Export") {
                                 Button("Export M3U8",systemImage:"square.and.arrow.up") { exportM3U(list) }
+                                Button("Export Soundly JSON", systemImage: "doc") { exportJSON([list], named: list.name) }
+                                if let detailMessage { Text(detailMessage).font(.footnote).foregroundStyle(.secondary) }
                             } footer: { Text("Playlist only. To use elsewhere, share music files from the track context menus and place them beside this playlist, preserving filenames. Unmatched references are retained separately and exported after matched tracks.") }
-                            Section("Add from library") {
-                                ForEach(songs) { song in
-                                    Button { if !list.hashes.contains(song.fileHash) { list.hashes.append(song.fileHash); save() } } label: {
-                                        Label(song.title,systemImage:list.hashes.contains(song.fileHash) ? "checkmark" : "plus")
-                                    }
+                        }.navigationTitle(list.name).toolbar {
+                            ToolbarItem(placement: .primaryAction) { EditButton() }
+                            ToolbarItem(placement: .secondaryAction) {
+                                Button("Rename playlist", systemImage: "pencil") {
+                                    proposedName = list.name
+                                    renameID = list.id
+                                    renaming = true
                                 }
                             }
-                        }.navigationTitle(list.name).toolbar { EditButton() }.soundlySurface()
-                            .onDisappear { save() }
-                    } label: { Label(list.name,systemImage:"music.note.list") }
+                        }.soundlySurface()
+                    } label: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Label(list.name, systemImage: "music.note.list")
+                            Text("\(list.hashes.count) tracks").font(.caption).foregroundStyle(.secondary)
+                        }.accessibilityElement(children: .combine).accessibilityLabel(list.name)
+                    }.contextMenu {
+                        Button("Duplicate playlist", systemImage: "plus.square.on.square") {
+                            var copy = list
+                            copy.id = UUID()
+                            copy.name = String(list.name.prefix(193)) + " (Copy)"
+                            _ = save(candidate: lists + [copy])
+                        }
+                    }
                 }.onDelete { lists.remove(atOffsets:$0); save() }
             }
             Section("Portable playlists") {
-                Button("Export playlists") {
-                    do { document = PlaylistDocument(data:try JSONEncoder().encode(PlaylistExchange(playlists:lists))); exportType = .json;exportName = "Soundly-playlists";exporting = true }
-                    catch { message = error.localizedDescription }
-                }
+                Button("Export playlists", systemImage: "square.and.arrow.up") {
+                    exportJSON(lists, named: "Soundly-playlists")
+                }.disabled(lists.isEmpty)
                 Button("Import playlists") { importing = true }.disabled(busy)
                 if busy { ProgressView("Reading playlist…") }
-                Text("Import Soundly JSON or local M3U/M3U8, then review matches before importing. Remote streams are not fetched. Music must already be in your library. JSON exchanges all playlists; M3U8 export is available inside each playlist. Unmatched references are retained for later matching.").font(.footnote)
+                Text("Import a Soundly JSON backup or an M3U/M3U8 playlist. Export all playlists here or export a single playlist from its detail.").font(.footnote)
                 if let message { Text(message).font(.footnote) }
             }
         }.navigationTitle("Playlists").soundlySurface().disabled(busy)
-            .onAppear { if let value = try? PlaylistExchange.decode(stored) { lists = value.playlists } }
+            .onAppear { reload() }
+            .onChange(of: stored) { _, _ in reload() }
+            .alert("Rename playlist", isPresented: $renaming) {
+                TextField("Playlist name", text: $proposedName)
+                Button("Cancel", role: .cancel) { renameID = nil }
+                Button("Save") { rename() }
+                    .disabled(proposedName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || proposedName.count > 200)
+            }
+            .sheet(item: $addingTracks) { list in
+                PlaylistTrackPicker(songs: songs, existing: Set(list.hashes)) { hashes in
+                    guard let index = lists.firstIndex(where: { $0.id == list.id }) else { return false }
+                    var updated = lists
+                    let currentHashes = Set(updated[index].hashes)
+                    updated[index].hashes.append(contentsOf: hashes.filter { !currentHashes.contains($0) })
+                    return save(candidate: updated)
+                }
+            }
+            .sheet(isPresented: Binding(get: { pendingJSON != nil }, set: { if !$0 { pendingJSON = nil } })) {
+                if let exchange = pendingJSON {
+                    NavigationStack {
+                        List {
+                            ForEach(exchange.playlists) { list in
+                                Label(list.name, systemImage: "music.note.list")
+                            }
+                            Text("Matching music already in your library will be available to play. Identical playlists are skipped.")
+                                .font(.footnote).foregroundStyle(.secondary)
+                        }.navigationTitle("Review playlists").soundlySurface()
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) { Button("Cancel") { pendingJSON = nil } }
+                            ToolbarItem(placement: .confirmationAction) { Button("Import") { importJSON(exchange) } }
+                        }
+                    }
+                }
+            }
             .fileExporter(isPresented:$exporting,document:document,contentType:exportType,defaultFilename:exportName) { result in
                 if case .failure(let error) = result,(error as NSError).code != NSUserCancelledError { message = "Export could not finish. Your playlists were preserved." }
             }
@@ -159,8 +235,7 @@ struct PlaylistsView:View {
                 let ext = url.pathExtension.lowercased()
                 if ext == "json" {
                     let exchange = try await Task.detached { try PlaylistExchange.decode(bytes) }.value
-                    let additions = exchange.playlists.map { item in var item = item;item.id = UUID();return item }
-                    if save(candidate:lists+additions) { message = "Imported \(additions.count) playlists. Music files are not included." }
+                    pendingJSON = exchange
                 } else if ext == "m3u" || ext == "m3u8" {
                     let result = try await Task.detached {
                         let parsed = try M3U.parse(bytes,strictUTF8:ext == "m3u8")
@@ -200,11 +275,190 @@ struct PlaylistsView:View {
             document = PlaylistDocument(data:try M3U.encode(entries));exportType = .m3uPlaylist
             let safe = list.name.components(separatedBy:CharacterSet.alphanumerics.inverted).filter { !$0.isEmpty }.joined(separator:"-")
             exportName = String((safe.isEmpty ? "Soundly-playlist" : safe).prefix(80))+".m3u8";exporting = true
-        } catch { message = "Could not export this playlist. Saved playlists were preserved." }
+        } catch { detailMessage = "Could not export this playlist." }
     }
-    private func resolved(_ list:LocalPlaylist)->[Song] { list.hashes.compactMap { hash in songs.first { $0.fileHash == hash } } }
-    @discardableResult private func save(candidate:[LocalPlaylist]? = nil)->Bool {
-        do { let bytes = try JSONEncoder().encode(PlaylistExchange(playlists:candidate ?? lists)); _ = try PlaylistExchange.decode(bytes); stored = bytes; if let candidate { lists = candidate };return true }
-        catch { if candidate == nil,let previous = try? PlaylistExchange.decode(stored) { lists = previous.playlists };message = "Playlists could not be saved. Previous saved data was preserved."; return false }
+
+    private var tracksByHash: [String: Song] {
+        Dictionary(songs.map { ($0.fileHash, $0) }, uniquingKeysWith: { first, _ in first })
+    }
+
+    private func resolved(_ list: LocalPlaylist) -> [Song] {
+        let tracks = tracksByHash
+        return list.hashes.compactMap { tracks[$0] }
+    }
+
+    private func play(_ list: LocalPlaylist, shuffled: Bool) {
+        let available = resolved(list).filter(\.available)
+        let ordered = shuffled ? available.shuffled() : available
+        guard let first = ordered.first else { return }
+        playback.play(first, within: ordered, shuffle: false)
+    }
+
+    private func rename() {
+        defer { renameID = nil }
+        guard let index = lists.firstIndex(where: { $0.id == renameID }) else { return }
+        var updated = lists
+        updated[index].name = proposedName.trimmingCharacters(in: .whitespacesAndNewlines)
+        _ = save(candidate: updated)
+    }
+
+    private func importJSON(_ exchange: PlaylistExchange) {
+        var updated = lists
+        for var list in exchange.playlists {
+            guard !updated.contains(where: {
+                $0.name == list.name && $0.hashes == list.hashes && ($0.unresolved ?? []) == (list.unresolved ?? [])
+            }) else { continue }
+            list.id = UUID()
+            updated.append(list)
+        }
+        let added = updated.count - lists.count
+        if save(candidate: updated) {
+            pendingJSON = nil
+            message = "Imported \(added) playlists. Skipped \(exchange.playlists.count - added) identical copies."
+        }
+    }
+
+    private func exportJSON(_ lists: [LocalPlaylist], named name: String) {
+        do {
+            document = PlaylistDocument(data: try PlaylistExchange.encode(lists))
+            exportType = .json
+            let clean = name.components(separatedBy: CharacterSet.alphanumerics.inverted).filter { !$0.isEmpty }.joined(separator: "-")
+            exportName = clean.isEmpty ? "Soundly-playlist" : String(clean.prefix(80))
+            exporting = true
+        } catch {
+            detailMessage = "Could not export this playlist."
+            message = "Could not export playlists."
+        }
+    }
+
+    private func reload() {
+        do { lists = try PlaylistExchange.saved(stored) }
+        catch { message = "Saved playlists could not be read." }
+    }
+
+    @discardableResult private func save(candidate: [LocalPlaylist]? = nil) -> Bool {
+        do {
+            _ = try PlaylistExchange.saved(stored)
+            let updated = candidate ?? lists
+            stored = try PlaylistExchange.encode(updated)
+            lists = updated
+            detailMessage = nil
+            return true
+        } catch {
+            if candidate == nil { reload() }
+            let error = "Playlists could not be saved. Previous saved data was preserved."
+            message = error
+            detailMessage = error
+            return false
+        }
+    }
+}
+
+private struct PlaylistTrackPicker: View {
+    let songs: [Song]
+    let existing: Set<String>
+    let add: ([String]) -> Bool
+    @Environment(\.dismiss) private var dismiss
+    @State private var search = ""
+    @State private var selected: [String] = []
+    @State private var showError = false
+
+    private var matches: [Song] {
+        songs.filter { song in
+            song.available && (search.isEmpty || [song.title, song.artist, song.album].contains {
+                $0.localizedStandardContains(search)
+            })
+        }
+    }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if matches.isEmpty { ContentUnavailableView("No songs found", systemImage: "music.note") }
+                ForEach(matches) { song in
+                    let added = existing.contains(song.fileHash)
+                    let checked = selected.contains(song.fileHash)
+                    Button {
+                        if checked { selected.removeAll { $0 == song.fileHash } }
+                        else { selected.append(song.fileHash) }
+                    } label: {
+                        HStack {
+                            CoverView(artwork: song.artwork, size: 36)
+                            VStack(alignment: .leading) {
+                                Text(song.title).foregroundStyle(.primary)
+                                Text(song.artist).font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: added || checked ? "checkmark.circle.fill" : "circle").foregroundStyle(.tint)
+                        }
+                    }.disabled(added)
+                    .accessibilityValue(added ? "Already in playlist" : checked ? "Selected" : "Not selected")
+                }
+            }.navigationTitle("Add songs").soundlySurface()
+            .searchable(text: $search, prompt: "Songs, artists or albums")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(selected.isEmpty ? "Add" : "Add (\(selected.count))") {
+                        if add(selected) { dismiss() } else { showError = true }
+                    }.accessibilityIdentifier("addSelectedSongs").disabled(selected.isEmpty)
+                }
+            }
+            .alert("Could not save playlist", isPresented: $showError) { Button("OK", role: .cancel) {} }
+        }
+    }
+}
+
+struct AddToPlaylistView: View {
+    let song: Song
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage("localPlaylists") private var stored = Data()
+    @State private var name = ""
+    @State private var message: String?
+    private var lists: [LocalPlaylist] { (try? PlaylistExchange.saved(stored)) ?? [] }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    TextField("Playlist name", text: $name)
+                    Button("Create and add", systemImage: "plus") { add(to: nil) }
+                        .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || name.count > 200)
+                } header: { Text(song.title) }
+                if !lists.isEmpty {
+                    Section("Your playlists") {
+                        ForEach(lists) { list in
+                            let alreadyAdded = list.hashes.contains(song.fileHash)
+                            Button { add(to: list.id) } label: {
+                                Label(list.name, systemImage: alreadyAdded ? "checkmark.circle.fill" : "music.note.list")
+                            }.disabled(alreadyAdded)
+                            .accessibilityValue(alreadyAdded ? "Already added" : "")
+                        }
+                    }
+                }
+                if let message { Text(message).font(.footnote).foregroundStyle(.secondary) }
+            }.navigationTitle("Add to playlist").soundlySurface()
+            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
+        }
+    }
+
+    private func add(to id: UUID?) {
+        do {
+            var updated = try PlaylistExchange.saved(stored)
+            if let id {
+                guard let index = updated.firstIndex(where: { $0.id == id }) else {
+                    message = "This playlist is no longer available."
+                    return
+                }
+                if !updated[index].hashes.contains(song.fileHash) { updated[index].hashes.append(song.fileHash) }
+            } else {
+                let title = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                updated.append(LocalPlaylist(name: title, hashes: [song.fileHash]))
+            }
+            stored = try PlaylistExchange.encode(updated)
+            dismiss()
+        } catch {
+            message = "Could not add this song. Your saved playlists were preserved."
+        }
     }
 }

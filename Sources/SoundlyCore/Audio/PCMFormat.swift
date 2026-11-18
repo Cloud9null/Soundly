@@ -16,6 +16,13 @@ public struct PCMFormat: Equatable, Sendable {
     public let bitDepth: Int?
     public let representation: Representation
 
+    /// Nominal PCM payload rate, excluding padding and transport overhead.
+    public var payloadKilobitsPerSecond: Double? {
+        guard let bitDepth, representation != .unknown else { return nil }
+        let rate = sampleRate * Double(channels) * Double(bitDepth) / 1_000
+        return rate.isFinite ? rate : nil
+    }
+
     public init(sampleRate: Double, channels: Int, bitDepth: Int?,
                 representation: Representation) throws {
         guard sampleRate.isFinite, sampleRate > 0 else {

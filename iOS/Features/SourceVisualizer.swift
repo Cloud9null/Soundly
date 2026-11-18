@@ -3,24 +3,73 @@ import AVFoundation
 
 /// Bounded source analysis, independent of the playback graph and its samples.
 enum SourceEnvelope {
-    static func analyze(_ url:URL)throws->[Float] {
-        let file = try AVAudioFile(forReading:url)
-        guard let buffer = AVAudioPCMBuffer(pcmFormat:file.processingFormat,frameCapacity:4096),file.processingFormat.commonFormat == .pcmFormatFloat32 else { return [] }
-        let stride = max(1,Int(ceil(Double(file.length)/20000)))
-        var output:[Float] = []; var count = 0; var energy:Double = 0
+    struct Analysis: Sendable {
+        let levels: [Float]
+        let pulses: [Float]
+        let interval: Double
+
+        func pulse(at seconds: Double) -> CGFloat {
+            guard seconds.isFinite, seconds >= 0, interval > 0, !pulses.isEmpty else { return 0 }
+            let index = min(seconds / interval, Double(pulses.count - 1))
+            let lower = Int(index)
+            let upper = min(lower + 1, pulses.count - 1)
+            let fraction = Float(index - Double(lower))
+            return CGFloat(pulses[lower] + (pulses[upper] - pulses[lower]) * fraction)
+        }
+    }
+
+    static func analyze(_ url: URL) throws -> Analysis {
+        let file = try AVAudioFile(forReading: url, commonFormat: .pcmFormatFloat32, interleaved: false)
+        let format = file.processingFormat
+        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: 8192), format.sampleRate > 0,
+              format.channelCount > 0, file.length > 0 else { return Analysis(levels: [], pulses: [], interval: 0) }
+        let width = max(1, Int(format.sampleRate / 100), Int(ceil(Double(file.length) / 90_000)))
+        let interval = Double(width) / format.sampleRate
+        let bassAlpha = Float(1 - exp(-2 * Double.pi * 150 / format.sampleRate))
+        var levels: [Float] = [], bass: [Float] = []
+        var count = 0
+        var energy: Float = 0, bassEnergy: Float = 0
+        let channels = Int(format.channelCount)
+        var low = [Float](repeating: 0, count: channels)
         while file.framePosition < file.length {
-            try Task.checkCancellation(); try file.read(into:buffer,frameCount:4096)
-            guard buffer.frameLength > 0, let channels = buffer.floatChannelData else { break }
-            for i in 0..<Int(buffer.frameLength) {
-                var frameEnergy:Double = 0
-                for c in 0..<Int(buffer.format.channelCount) {
-                    let value = Double(channels[c][i]); if value.isFinite { frameEnergy += value*value }
+            try Task.checkCancellation()
+            try file.read(into: buffer, frameCount: buffer.frameCapacity)
+            guard buffer.frameLength > 0, let samples = buffer.floatChannelData else { break }
+            for frame in 0..<Int(buffer.frameLength) {
+                for channel in 0..<channels {
+                    let sample = samples[channel][frame]
+                    let value = sample.isFinite ? max(-4, min(4, sample)) : 0
+                    low[channel] += bassAlpha * (value - low[channel])
+                    energy += value * value
+                    bassEnergy += low[channel] * low[channel]
                 }
-                energy += frameEnergy/Double(buffer.format.channelCount); count += 1
-                if count == stride { output.append(Float(sqrt(energy/Double(count)))); energy = 0; count = 0 }
+                count += 1
+                if count == width {
+                    levels.append(sqrt(energy / Float(count * channels)))
+                    bass.append(sqrt(bassEnergy / Float(count * channels)))
+                    count = 0
+                    energy = 0
+                    bassEnergy = 0
+                }
             }
         }
-        if count > 0 { output.append(Float(sqrt(energy/Double(count)))) }; return output
+        if count > 0 {
+            levels.append(sqrt(energy / Float(count * channels)))
+            bass.append(sqrt(bassEnergy / Float(count * channels)))
+        }
+        let levelScale = max(0.0001, levels.max() ?? 0)
+        let bassScale = max(0.015, bass.max() ?? 0)
+        let baselineDecay = Float(exp(-interval / 0.18))
+        let releaseDecay = Float(exp(-interval / 0.11))
+        var baseline: Float = 0, pulse: Float = 0
+        let pulses = zip(levels, bass).map { level, low in
+            let signal = 0.36 * (level / levelScale) + 0.64 * (low / bassScale)
+            let accent = max(0, signal - baseline)
+            baseline = baselineDecay * baseline + (1 - baselineDecay) * signal
+            pulse = max(pulse * releaseDecay, min(1, 1.8 * accent + 0.18 * signal))
+            return pulse
+        }
+        return Analysis(levels: levels, pulses: pulses, interval: interval)
     }
     /// Area-weighted bins retain the timeline even when a very short file has fewer samples than pixels.
     static func display(_ samples:[Float],count:Int)->[CGFloat] {
@@ -41,15 +90,20 @@ enum SourceEnvelope {
 }
 struct SourceVisualizer:View, @MainActor Animatable {
     var progress:Double = 0
+    var allowMotion = true
     var animatableData:Double { get { progress } set { progress = newValue } }
     @Environment(PlaybackController.self) private var playback
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
+    @AppStorage("waveformMotion") private var motionEnabled = true
     @AppStorage("visualizerStyle") private var style = "Mirror"
     @AppStorage("visualizerColor") private var tint = "Mint"
     @AppStorage("waveformRed") private var red = 0.18
     @AppStorage("waveformGreen") private var green = 0.8
     @AppStorage("waveformBlue") private var blue = 0.72
-    @State private var samples:[Float] = []
+    @State private var samples: [CGFloat] = []
+    @State private var analysis: SourceEnvelope.Analysis?
     private var colors:[Color] {
         switch tint {
         case "Custom": [Color(red:red,green:green,blue:blue)]
@@ -60,34 +114,68 @@ struct SourceVisualizer:View, @MainActor Animatable {
         default: [.mint,.cyan]
         }
     }
-    var body:some View {
-        Canvas { context,size in
-            let fraction = min(1,max(0,progress))
-            let shading = GraphicsContext.Shading.linearGradient(Gradient(colors:colors),startPoint:.zero,endPoint:CGPoint(x:size.width,y:0))
-            guard style != "Off",!samples.isEmpty else {
-                let rail = Path(roundedRect:CGRect(x:0,y:size.height/2-2,width:size.width,height:4),cornerRadius:2)
-                var base = context; base.opacity = 0.14; base.fill(rail,with:.color(.primary))
-                var played = context; played.clip(to:Path(CGRect(x:0,y:0,width:size.width*fraction,height:size.height)))
-                played.fill(rail,with:shading);return
-            }
-            // The detailed envelope is computed once on analysis, never on the audio render thread.
-            var base = context; base.opacity = scheme == .dark ? 0.32 : 0.26
-            Self.draw(&base,size:size,values:samples.map(CGFloat.init),style:style,shading:.color(.primary))
-            var played = context
-            played.clip(to:Path(CGRect(x:0,y:0,width:size.width*fraction,height:size.height)))
-            Self.draw(&played,size:size,values:samples.map(CGFloat.init),style:style,shading:shading)
-        }.accessibilityHidden(true)
-        .task(id:"\(playback.current?.id.uuidString ?? "")-\(style == "Off")") {
-            samples = [];guard style != "Off",let track = playback.current else { return }
-            let work = Task.detached { ()throws->[Float] in
+    var body: some View {
+        let audio = playback.audio
+        let moving = allowMotion && motionEnabled && !reduceMotion && scenePhase == .active
+            && style != "Off" && analysis != nil && audio.playing && !playback.busy
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !moving)) { _ in
+            let elapsed = audio.elapsed + max(0, min(0.55, ProcessInfo.processInfo.systemUptime - audio.observedAt))
+            let pulse = moving ? analysis?.pulse(at: min(audio.duration, elapsed)) ?? 0 : 0
+            waveform(pulse: pulse)
+        }
+        .accessibilityHidden(true)
+        .task(id: "\(playback.current?.id.uuidString ?? "")-\(style == "Off")") {
+            samples = []
+            analysis = nil
+            guard style != "Off", let track = playback.current else { return }
+            let work = Task.detached(priority: .utility) {
                 let root = try LibraryPaths.directory("Music")
-                let envelope = try SourceEnvelope.analyze(PrivateMusicFile.url(track.filename,in:root))
-                return SourceEnvelope.display(envelope,count:180).map(Float.init)
+                let analysis = try SourceEnvelope.analyze(PrivateMusicFile.url(track.filename, in: root))
+                return (analysis, SourceEnvelope.display(analysis.levels, count: 180))
             }
             do {
-                let values = try await withTaskCancellationHandler(operation:{try await work.value},onCancel:{work.cancel()})
-                guard !Task.isCancelled else { return };samples = values
-            } catch { /* A functional seek rail remains when source analysis is unavailable. */ }
+                let result = try await withTaskCancellationHandler(operation: { try await work.value }, onCancel: { work.cancel() })
+                guard !Task.isCancelled else { return }
+                analysis = result.0
+                samples = result.1
+            } catch { /* The simple seek rail stays available. */ }
+        }
+    }
+
+    private func waveform(pulse: CGFloat) -> some View {
+        Canvas { context, size in
+            let fraction = min(1, max(0, progress))
+            let end = CGPoint(x: size.width, y: 0)
+            let shading = GraphicsContext.Shading.linearGradient(Gradient(colors: colors), startPoint: .zero, endPoint: end)
+            let playedMask = Path(CGRect(x: 0, y: 0, width: size.width * fraction, height: size.height))
+            var played = context
+            played.clip(to: playedMask)
+            guard style != "Off", !samples.isEmpty else {
+                let rail = Path(roundedRect: CGRect(x: 0, y: size.height / 2 - 2, width: size.width, height: 4), cornerRadius: 2)
+                context.fill(rail, with: .color(.primary.opacity(0.14)))
+                played.fill(rail, with: shading)
+                return
+            }
+            let values = samples.enumerated().map { index, amplitude in
+                let point = Double(index) / Double(max(1, samples.count - 1))
+                let distance = abs(point - fraction) / 0.23
+                let focus = CGFloat(max(0, 1 - distance))
+                return min(1, amplitude * (0.68 + 0.78 * pulse * focus * focus))
+            }
+            var base = context
+            base.opacity = scheme == .dark ? 0.32 : 0.26
+            Self.draw(&base, size: size, values: values, style: style, shading: .color(.primary))
+            Self.draw(&played, size: size, values: values, style: style, shading: shading)
+            if pulse > 0.015 {
+                let x = size.width * fraction
+                let glow = GraphicsContext.Shading.linearGradient(
+                    Gradient(colors: [.clear, (colors.last ?? .mint).opacity(0.8 * pulse), .clear]),
+                    startPoint: CGPoint(x: x - size.width * 0.19, y: 0),
+                    endPoint: CGPoint(x: x + size.width * 0.19, y: 0), options: [])
+                var halo = context
+                halo.addFilter(.blur(radius: 2.5))
+                Self.draw(&halo, size: size, values: values, style: style, shading: glow)
+            }
         }
     }
     private static func draw(_ context:inout GraphicsContext,size:CGSize,values:[CGFloat],style:String,shading:GraphicsContext.Shading) {
@@ -145,6 +233,7 @@ struct VisualizerSettingsView:View {
     @AppStorage("visualizerStyle") private var style = "Mirror"
     @AppStorage("visualizerColor") private var tint = "Mint"
     @AppStorage("playerBackdrop") private var backdrop = "Artwork"
+    @AppStorage("waveformMotion") private var motion = true
     @AppStorage("waveformRed") private var red = 0.18
     @AppStorage("waveformGreen") private var green = 0.8
     @AppStorage("waveformBlue") private var blue = 0.72
@@ -157,7 +246,8 @@ struct VisualizerSettingsView:View {
     var body:some View {
         Form {
             Section("Waveform") {
-                SourceVisualizer(progress:0.55).frame(height:64)
+                SourceVisualizer(progress:0.55, allowMotion:false).frame(height:64)
+                Toggle("Move with the music", isOn: $motion)
                 Picker("Shape",selection:$style) { ForEach(["Off","Wave","Mirror","Bars","Orbit"],id:\.self) { Text($0 == "Orbit" ? "Bars (legacy Orbit)" : $0) } }
                 Picker("Color",selection:$tint) { ForEach(["Mint","Rose","Ocean","Amber","Rainbow","Custom"],id:\.self) { Text($0) } }
                 ColorPicker("Custom color",selection:custom,supportsOpacity:false)
@@ -166,7 +256,7 @@ struct VisualizerSettingsView:View {
                 Picker("Background",selection:$backdrop) { ForEach(PlayerBackdrop.names,id:\.self) { Text($0) } }.accessibilityIdentifier("playerBackdropPicker")
             }
             Section {
-                Text("Drag the waveform to seek. Its shape comes from the full decoded source, with RMS amplitude scaled to fit the display. It stays still when paused; only the progress moves. This visual scaling does not alter audio and does not measure DAC output. Off keeps a simple seek rail.").font(.footnote)
+                Text("Drag the waveform to seek. It reacts to accents and bass in the decoded song and rests when paused. Turn off motion for a steady waveform.").font(.footnote)
                 Text("Use your iPhone volume buttons or Control Center to adjust volume.").font(.footnote)
             }
         }.navigationTitle("Player appearance").soundlySurface()
