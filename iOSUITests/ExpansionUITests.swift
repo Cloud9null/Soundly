@@ -12,7 +12,7 @@ import XCTest
         let miniPlayer = app.buttons["miniPlayerOpen"];XCTAssertTrue(miniPlayer.waitForExistence(timeout:10))
         var openPoint:CGPoint?
         let selected = NSPredicate { _,_ in
-            guard miniPlayer.exists,miniPlayer.isHittable,(miniPlayer.value as? String)?.hasPrefix("Reference 1") == true else { return false }
+            guard miniPlayer.exists, (miniPlayer.value as? String)?.hasPrefix("Reference 1") == true else { return false }
             let frame = miniPlayer.frame;let window = app.frame
             guard frame.minX.isFinite,frame.minY.isFinite,frame.width.isFinite,frame.height.isFinite,
                   frame.width >= 44,frame.height >= 44,window.contains(frame) else { return false }
@@ -21,7 +21,7 @@ import XCTest
         }
         XCTAssertEqual(XCTWaiter.wait(for:[XCTNSPredicateExpectation(predicate:selected,object:miniPlayer)],timeout:20),.completed)
         guard let openPoint else { return }
-        // Anchor to the stable app window: the native accessory can return a transient infinite AX frame.
+        // Use the app window after the native accessory reports a finite frame. UIKit may omit its activation point during layout.
         app.coordinate(withNormalizedOffset:.zero).withOffset(CGVector(dx:openPoint.x,dy:openPoint.y)).tap()
         XCTAssertTrue(app.buttons["playbackMenu"].waitForExistence(timeout:10))
         app.buttons["playbackMenu"].tap()
@@ -58,6 +58,10 @@ import XCTest
         app.buttons.containing(NSPredicate(format:"label CONTAINS %@","Reference 2")).firstMatch.tap()
         app.buttons["addSelectedSongs"].tap()
         XCTAssertTrue(app.staticTexts.containing(NSPredicate(format:"label CONTAINS[c] %@","Tracks · 2")).firstMatch.waitForExistence(timeout: 5))
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "Playlist after adding two tracks"
+        attachment.lifetime = .keepAlways
+        add(attachment)
         app.terminate(); app.launch(); XCTAssertTrue(app.navigationBars["Listen"].waitForExistence(timeout:30))
         app.tabBars.buttons["Library"].tap(); app.buttons["libraryBrowse"].tap(); app.buttons["Playlists"].tap()
         XCTAssertTrue(app.buttons[String(name)].waitForExistence(timeout:5))
