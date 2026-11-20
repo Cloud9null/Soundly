@@ -1,0 +1,73 @@
+import XCTest
+import AVFoundation
+@testable import Soundly
+
+final class SignalPathIntegrationTests: XCTestCase {
+    func testActualFLACSourceDepthDoesNotBecomeDecoderFloatWidth() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString+".flac")
+        defer { try? FileManager.default.removeItem(at:url) }
+        try XCTUnwrap(Data(base64Encoded:FLACFixtures.pcm24)).write(to:url)
+        let file = try AVAudioFile(forReading:url)
+        let info = try SourceFormatInspector.inspect(file,url:url)
+        XCTAssertEqual(info.codec,"FLAC"); XCTAssertEqual(info.pcm?.bitDepth,24)
+        XCTAssertEqual(info.pcm?.sampleRate,96000); XCTAssertEqual(info.pcm?.representation,.signedInteger)
+        let decoded = try XCTUnwrap(SourceFormatInspector.pcm(file.processingFormat))
+        XCTAssertEqual(decoded.representation,.floatingPoint); XCTAssertEqual(decoded.bitDepth,32)
+        let snapshot = SignalPathSnapshot(source:info.pcm,sourceIsLossless:info.lossless,decoderOutput:decoded,engineOutput:decoded,processing:.bypassed,engineGain:1,sessionIsActive:true,sessionSampleRate:96000,sessionChannels:2,route:.usbAudio)
+        XCTAssertEqual(SignalPathEvaluator.assess(snapshot).status,.nativeRateUnverified)
+    }
+    func testAllExposedPortsAndMultipleOutputFallback() {
+        XCTAssertEqual(LiveSignalPath.route([AVAudioSession.Port.usbAudio.rawValue]),.usbAudio)
+        XCTAssertEqual(LiveSignalPath.route([AVAudioSession.Port.bluetoothA2DP.rawValue]),.bluetoothA2DP)
+        XCTAssertEqual(LiveSignalPath.route([AVAudioSession.Port.bluetoothHFP.rawValue]),.bluetoothHFP)
+        XCTAssertEqual(LiveSignalPath.route([AVAudioSession.Port.bluetoothLE.rawValue]),.bluetoothLE)
+        XCTAssertEqual(LiveSignalPath.route([AVAudioSession.Port.airPlay.rawValue]),.airPlay)
+        XCTAssertEqual(LiveSignalPath.route([AVAudioSession.Port.headphones.rawValue]),.wiredHeadphones)
+        XCTAssertEqual(LiveSignalPath.route([]),.unknown)
+        XCTAssertEqual(LiveSignalPath.route(["undocumented"]),.unknown)
+        XCTAssertEqual(LiveSignalPath.route([AVAudioSession.Port.usbAudio.rawValue,AVAudioSession.Port.builtInSpeaker.rawValue]),.unknown)
+    }
+    func testNoObservationsCannotProduceNativeOrVerifiedStatus() {
+        let report = LiveSignalPath()
+        XCTAssertNil(report.snapshot.source); XCTAssertNil(report.systemVolume)
+        XCTAssertEqual(report.assessment.status,.unknown)
+    }
+    func testOutputNodeRateDifferenceIsReportedEvenIfEngineMatchesSource() throws {
+        let source = try PCMFormat(sampleRate:96000,channels:2,bitDepth:24,representation:.signedInteger)
+        let output = try PCMFormat(sampleRate:48000,channels:2,bitDepth:32,representation:.floatingPoint)
+        let snapshot = SignalPathSnapshot(source:source,sourceIsLossless:true,decoderOutput:source,engineOutput:source,
+            processing:.bypassed,engineGain:1,sessionIsActive:true,sessionSampleRate:96000,sessionChannels:2,route:.usbAudio,deviceOutput:output)
+        let report = LiveSignalPath(snapshot:snapshot)
+        XCTAssertEqual(report.assessment.status,.converted)
+        XCTAssertEqual(report.rateSummary,"Sample-rate conversion observed")
+    }
+    func testBluetoothRateComparisonDoesNotGuessCodecOrDACDepth() throws {
+        var report = LiveSignalPath()
+        report.snapshot.source = try PCMFormat(sampleRate:44100,channels:2,bitDepth:24,representation:.signedInteger)
+        report.snapshot.sessionIsActive = true;report.snapshot.sessionSampleRate = 48000;report.snapshot.route = .bluetoothA2DP
+        XCTAssertEqual(report.rateComparison,"44.1 kHz → 48.0 kHz · Resampled")
+        XCTAssertEqual(report.transportLabel,"Bluetooth A2DP · lossy transport")
+        XCTAssertEqual(report.assessment.status,.lossyTransport)
+        XCTAssertNil(report.snapshot.deviceOutput)
+    }
+    func testOutputInterfaceRateTakesPriorityOverContradictorySessionRate() throws {
+        var report = LiveSignalPath()
+        report.snapshot.source = try PCMFormat(sampleRate:44100,channels:2,bitDepth:24,representation:.signedInteger)
+        report.snapshot.sessionIsActive = true;report.snapshot.sessionSampleRate = 44100
+        report.snapshot.deviceOutput = try PCMFormat(sampleRate:48000,channels:2,bitDepth:32,representation:.floatingPoint)
+        XCTAssertEqual(report.rateComparison,"44.1 kHz → 48.0 kHz · Resampled")
+        report.snapshot.deviceOutput = report.snapshot.source
+        XCTAssertEqual(report.rateComparison,"44.1 kHz → 44.1 kHz · Same endpoint rate")
+        report.snapshot.sessionIsActive = false
+        XCTAssertEqual(report.rateComparison,"Source → iOS output: not observed")
+    }
+    func testWaveformUsesActualAmplitudeIncludingSilentRegions() {
+        let result = SourceEnvelope.display([0,0,0.5,0.5,1,1,0,0],count:4)
+        XCTAssertEqual(result.count,4)
+        XCTAssertEqual(result[0],0);XCTAssertEqual(result[3],0)
+        XCTAssertGreaterThan(result[2],result[1]);XCTAssertEqual(result[2],1)
+        XCTAssertEqual(SourceEnvelope.display([0,0],count:8),Array(repeating:0,count:8))
+        XCTAssertEqual(SourceEnvelope.display([.nan,.infinity,-1],count:3),[0,0,0])
+        XCTAssertEqual(SourceEnvelope.display([],count:8),[])
+    }
+}

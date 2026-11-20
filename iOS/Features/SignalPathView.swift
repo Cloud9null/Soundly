@@ -1,0 +1,170 @@
+import SwiftUI
+
+struct SignalPathView: View {
+    var showsAudioSettings = true
+    @Environment(PlaybackController.self) private var playback
+    private var report: LiveSignalPath { playback.audio.signalPath }
+    private var snapshot: SignalPathSnapshot { report.snapshot }
+    var body: some View {
+        ScrollView {
+            VStack(alignment:.leading,spacing:16) {
+                Label(report.assessment.status.rawValue,systemImage:statusSymbol).font(.title2.bold())
+                    .accessibilityIdentifier("signalPathStatus")
+                Text(report.assessment.explanation).foregroundStyle(.secondary)
+                Label(report.rateSummary,systemImage:"waveform.path").font(.headline).accessibilityIdentifier("rateSummary")
+                Text(report.rateComparison).font(.subheadline.monospaced()).accessibilityIdentifier("outputRateComparison")
+                outputSummary
+                if showsAudioSettings {
+                    NavigationLink {
+                        AudioSettingsView()
+                    } label: {
+                        Label("DAC & Equalizer Settings", systemImage: "slider.horizontal.3")
+                    }.buttonStyle(.bordered)
+                }
+                if !playback.audio.playing { Label("Playback is paused or stopped. Values describe observed configuration, not verified output samples.",systemImage:"pause.circle").font(.footnote) }
+                chain
+                stage("1",title:"Source",evidence:"FILE METADATA",icon:"doc") {
+                    Text(report.source.codec).font(.headline)
+                    Text(Self.format(snapshot.source))
+                    Text(report.source.note).font(.footnote).foregroundStyle(.secondary)
+                }
+                stage("2",title:"Decoder",evidence:"API REPORTED",icon:"waveform") {
+                    Text("\(report.source.codec) → PCM").font(.headline)
+                    Text(Self.format(snapshot.decoderOutput))
+                    Text("AVAudioFile processing format. Decoder sample width is separate from original file depth.").font(.footnote).foregroundStyle(.secondary)
+                }
+                stage("3",title:"Audio engine",evidence:"API REPORTED",icon:"slider.horizontal.3") {
+                    Text(Self.format(snapshot.engineOutput))
+                    Text(report.graphPath.description)
+                    LabeledContent("Application gain",value:snapshot.engineGain.map { String(format:"%.3f",$0) } ?? "Unknown")
+                    Text(snapshot.processing == .bypassed ? "No optional DSP, EQ, normalization or crossfade. Integer-to-float decoding remains disclosed; bypassing an app mixer does not bypass iOS processing." : "Optional DSP is applied: equalizer with −6 dB preamp. Output is modified.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
+                stage("4",title:"iOS audio session",evidence:"API REPORTED",icon:"iphone") {
+                    LabeledContent("Session active",value:snapshot.sessionIsActive ? "Activation observed" : "Not active / not observed")
+                    LabeledContent("Requested rate",value:Self.rate(report.requestedRate))
+                    LabeledContent("Effective session rate",value:Self.rate(snapshot.sessionSampleRate))
+                    LabeledContent("Output channels",value:snapshot.sessionChannels.map(String.init) ?? "Unknown")
+                    LabeledContent("Requested I/O buffer", value: Self.milliseconds(report.requestedBuffer, fallback: "Automatic"))
+                    LabeledContent("Effective I/O buffer", value: Self.milliseconds(report.bufferDuration))
+                    LabeledContent("iOS output latency", value: Self.milliseconds(report.outputLatency))
+                    if let note = report.bufferRequestNote { Text(note).font(.footnote) }
+                    LabeledContent("System volume",value:report.systemVolume.map { String(format:"%.0f%%",$0*100) } ?? "Unknown")
+                    Text("System volume alone does not identify downstream digital gain or physical DAC processing.").font(.footnote).foregroundStyle(.secondary)
+                    if let note = playback.audio.rateRequestNote { Text(note).font(.footnote) }
+                }
+                stage("5",title:"Output route",evidence:"API REPORTED + UNAVAILABLE",icon:"hifispeaker") {
+                    Text(playback.audio.route).font(.headline)
+                    Text(report.transportLabel)
+                    Text(playback.audio.routeTypes.isEmpty ? "Port type not observed" : playback.audio.routeTypes.joined(separator:", ")).font(.caption.monospaced())
+                    Text("Output-node input: "+Self.format(report.outputNodeInput))
+                    Text("Output-node output: "+Self.format(snapshot.deviceOutput))
+                    LabeledContent("Negotiated transport codec",value:"Not reported by iOS")
+                    LabeledContent("Transport bitrate",value:"Not reported by iOS")
+                    LabeledContent("DAC effective bit depth",value:"Not reported by iOS")
+                    LabeledContent("USB chip / capability table",value:"Not exposed here")
+                    Text("Only iOS-exposed port names/types and session channels are shown. AirPlay and unspecified Bluetooth transports remain unverified.").font(.footnote).foregroundStyle(.secondary)
+                }
+                stage("6",title:"Assessment",evidence:"INFERRED — NOT BIT VERIFIED",icon:"checkmark.shield") {
+                    Text(report.assessment.status.rawValue).font(.headline)
+                    Text(report.assessment.explanation)
+                    Text("Integer/float or sample-width conversion is reported conservatively; it does not necessarily imply lost information. Rate equality does not prove sample identity. External digital capture is required for a specifically tested route.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
+                if !playback.routeEvents.isEmpty {
+                    DisclosureGroup("Recent route / interruption events") {
+                        ForEach(playback.routeEvents.reversed()) { event in
+                            VStack(alignment:.leading,spacing:4) {
+                                Text(event.date,style:.time).font(.caption.monospacedDigit())
+                                Text(event.message).font(.footnote)
+                            }.padding(.vertical,4)
+                        }
+                        Text("Memory-only, up to 30 events. No track titles, file paths or personal port names are logged.").font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                Text("Evidence labels distinguish parsed source metadata, iOS/API observations, inferred conversion and unavailable physical measurements. No value is a fabricated DAC capability.")
+                    .font(.footnote).foregroundStyle(.secondary)
+            }.padding()
+        }.soundlySurface().navigationTitle("Signal Path").navigationBarTitleDisplayMode(.inline)
+    }
+    private var outputSummary:some View {
+        VStack(alignment:.leading,spacing:12) {
+            Label("What reaches the output",systemImage:"hifispeaker.fill").font(.headline)
+            Text(playback.audio.route).font(.subheadline)
+            Text(report.transportLabel).font(.caption).foregroundStyle(.secondary)
+            Divider()
+            LabeledContent(snapshot.deviceOutput == nil ? "Session sample rate" : "Output sample rate",
+                           value: Self.rate(report.outputRate))
+                .font(.subheadline.weight(.semibold)).accessibilityIdentifier("outputSampleRate")
+            Text(Self.format(snapshot.deviceOutput)).font(.subheadline.monospaced()).accessibilityIdentifier("outputPCMFormat")
+            LabeledContent("PCM payload rate", value: report.outputBitrate.map {
+                $0.formatted(.number.precision(.fractionLength(0...1))) + " kbps"
+            } ?? "Unavailable")
+            Text("PCM payload is sample rate × sample width × channels at the iOS interface.")
+                .font(.footnote).foregroundStyle(.secondary)
+            if let output = snapshot.deviceOutput?.sampleRate, let session = snapshot.sessionSampleRate, output != session {
+                Text("The audio session separately reports " + Self.rate(session) + ".")
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
+            if [.bluetoothA2DP, .bluetoothHFP, .bluetoothLE, .airPlay].contains(snapshot.route) {
+                LabeledContent("Wireless bitrate", value: "Unavailable on iOS")
+                LabeledContent("Receiver sample rate", value: "Unavailable on iOS")
+            }
+            if snapshot.route == .usbAudio {
+                LabeledContent("DAC precision", value: "Unverified")
+            }
+
+        }.padding(18).background(.tint.opacity(0.08),in:RoundedRectangle(cornerRadius:22))
+            .accessibilityElement(children:.contain)
+            .accessibilityIdentifier("outputSummary")
+    }
+    private var chain:some View {
+        VStack(alignment:.leading,spacing:10) {
+            chainRow("Source · "+report.source.codec,Self.format(snapshot.source))
+            Image(systemName:"arrow.down").foregroundStyle(.secondary)
+            chainRow("Decoder",Self.format(snapshot.decoderOutput))
+            Image(systemName:"arrow.down").foregroundStyle(.secondary)
+            chainRow("Engine · "+report.graphPath.description,Self.format(snapshot.engineOutput))
+            Image(systemName:"arrow.down").foregroundStyle(.secondary)
+            chainRow("iOS output interface · PCM",Self.format(snapshot.deviceOutput))
+            Image(systemName:"arrow.down").foregroundStyle(.secondary)
+            chainRow("Destination · "+playback.audio.route,report.transportLabel)
+            Text("Session: "+Self.rate(snapshot.sessionSampleRate)+".").font(.caption).foregroundStyle(.secondary)
+        }.padding().background(.tint.opacity(0.06),in:RoundedRectangle(cornerRadius:22))
+    }
+    private func chainRow(_ name:String,_ value:String)->some View {
+        VStack(alignment:.leading,spacing:4) { Text(name).font(.headline); Text(value).font(.caption.monospaced()) }
+    }
+    private var statusSymbol:String {
+        switch report.assessment.status {
+        case .lossyTransport: "antenna.radiowaves.left.and.right"
+        case .converted: "arrow.triangle.2.circlepath"
+        case .nativeRateUnverified: "waveform.path"
+        case .verifiedBitPerfect: "checkmark.seal"
+        case .unknown: "questionmark.circle"
+        }
+    }
+    private func stage<Content:View>(_ number:String,title:String,evidence:String,icon:String,@ViewBuilder content:()->Content)->some View {
+        VStack(alignment:.leading,spacing:12) {
+            HStack {
+                Image(systemName:icon).foregroundStyle(.tint)
+                Text(title).font(.headline)
+                Spacer()
+                Text(number).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+            }
+            Text(evidence).font(.caption2.weight(.semibold)).tracking(0.8).foregroundStyle(.secondary)
+            content()
+        }.frame(maxWidth:.infinity,alignment:.leading).padding(18)
+            .background(.tint.opacity(0.06),in:RoundedRectangle(cornerRadius:22))
+    }
+    static func milliseconds(_ value: TimeInterval?, fallback: String = "Unknown") -> String {
+        value.map { String(format: "%.2f ms", $0 * 1_000) } ?? fallback
+    }
+    static func rate(_ value:Double?)->String { value.map { String(format:"%.1f kHz",$0/1000) } ?? "Unknown" }
+    static func format(_ format:PCMFormat?)->String {
+        guard let format else { return "Not observed / unknown" }
+        let representation:String
+        switch format.representation { case .signedInteger: representation = "Integer"; case .floatingPoint: representation = "Float"; case .unknown: representation = "Representation unknown" }
+        return "\(representation) · \(format.bitDepth.map { "\($0)-bit" } ?? "Depth unknown") · \(rate(format.sampleRate)) · \(format.channels) ch"
+    }
+}
