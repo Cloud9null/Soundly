@@ -5,6 +5,9 @@ struct LiveSignalPath: Sendable {
     var snapshot = SignalPathSnapshot()
     var source = SourceAudioInfo()
     var systemVolume: Float?
+    var requestedBuffer: TimeInterval?
+    var bufferRequestNote: String?
+    var outputLatency: TimeInterval?
     var bufferDuration: Double?
     var requestedRate:Double?
     var graphPath = AudioGraphPath.unknown

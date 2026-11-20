@@ -72,6 +72,7 @@ struct PlaylistsView:View {
     @State private var exportType:UTType = .json
     @State private var exportName = "Soundly-playlists"
     var body:some View {
+        let catalogTracks = tracksByHash
         List {
             Section("New playlist") {
                 TextField("Playlist name",text:$name).focused($naming).accessibilityIdentifier("playlistName")
@@ -89,10 +90,13 @@ struct PlaylistsView:View {
                     NavigationLink {
                         playlistDetail($list)
                     } label: {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Label(list.name, systemImage: "music.note.list")
-                            Text("\(list.hashes.count) tracks").font(.caption).foregroundStyle(.secondary)
-                        }.accessibilityElement(children: .combine).accessibilityLabel(list.name)
+                        HStack(spacing: 12) {
+                            CoverView(artwork: artwork(for: list, in: catalogTracks), size: 58)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(list.name).font(.headline).foregroundStyle(.primary)
+                                Text("\(list.hashes.count) tracks").font(.caption).foregroundStyle(.secondary)
+                            }
+                        }.padding(.vertical, 3).accessibilityElement(children: .combine).accessibilityLabel(list.name)
                     }.contextMenu {
                         Button("Duplicate playlist", systemImage: "plus.square.on.square") {
                             var copy = list
@@ -192,7 +196,19 @@ struct PlaylistsView:View {
             Section("Tracks · \(list.hashes.count)") {
                 ForEach(Array(list.hashes.enumerated()),id:\.offset) { _,hash in
                     if let song = tracks[hash] {
-                        Button(song.title) { playback.play(song,within:resolved(list)) }.disabled(!song.available)
+                        Button {
+                            playback.play(song, within: resolved(list))
+                        } label: {
+                            HStack(spacing: 12) {
+                                PlaylistSongLabel(song: song)
+                                Spacer(minLength: 0)
+                                if playback.current?.id == song.id {
+                                    Image(systemName: playback.audio.playing ? "waveform" : "pause.circle")
+                                        .foregroundStyle(.tint).accessibilityHidden(true)
+                                }
+                            }.padding(.vertical, 4).contentShape(Rectangle())
+                        }.buttonStyle(.plain).disabled(!song.available)
+                            .accessibilityLabel(song.title)
                             .contextMenu {
                                 if let url = musicURL(song) { ShareLink(item:url) { Label("Share music file",systemImage:"square.and.arrow.up") } }
                             }
@@ -241,6 +257,13 @@ struct PlaylistsView:View {
                     return save(candidate: updated)
                 }
             }
+    }
+
+    private func artwork(for list: LocalPlaylist, in tracks: [String: Song]) -> String? {
+        for hash in list.hashes {
+            if let artwork = tracks[hash]?.artwork { return artwork }
+        }
+        return nil
     }
 
     private var catalog:[M3UCatalogItem] { songs.map { M3UCatalogItem(hash:$0.fileHash,filename:$0.filename,title:$0.title,artist:$0.artist) } }
@@ -411,11 +434,7 @@ private struct PlaylistTrackPicker: View {
                         else { selected.append(song.fileHash) }
                     } label: {
                         HStack {
-                            CoverView(artwork: song.artwork, size: 36)
-                            VStack(alignment: .leading) {
-                                Text(song.title).foregroundStyle(.primary)
-                                Text(song.artist).font(.caption).foregroundStyle(.secondary)
-                            }
+                            PlaylistSongLabel(song: song, artworkSize: 36)
                             Spacer()
                             Image(systemName: added || checked ? "checkmark.circle.fill" : "circle").foregroundStyle(.tint)
                         }
@@ -437,35 +456,74 @@ private struct PlaylistTrackPicker: View {
     }
 }
 
+struct PlaylistSongLabel: View {
+    let song: Song
+    var artworkSize: CGFloat = 46
+
+    var body: some View {
+        HStack(spacing: 12) {
+            CoverView(artwork: song.artwork, size: artworkSize)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(song.title).foregroundStyle(.primary).lineLimit(1)
+                Text([song.artist, song.album].filter { !$0.isEmpty }.joined(separator: " · "))
+                    .font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                if !song.available {
+                    Text("Local file missing").font(.caption2).foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+}
+
 struct AddToPlaylistView: View {
     let song: Song
     @Environment(\.dismiss) private var dismiss
     @AppStorage("localPlaylists") private var stored = Data()
     @State private var name = ""
+    @State private var search = ""
     @State private var message: String?
     private var lists: [LocalPlaylist] { (try? PlaylistExchange.saved(stored)) ?? [] }
+
+    private var matches: [LocalPlaylist] {
+        lists.filter { search.isEmpty || $0.name.localizedStandardContains(search) }
+    }
 
     var body: some View {
         NavigationStack {
             List {
                 Section {
-                    TextField("Playlist name", text: $name)
-                    Button("Create and add", systemImage: "plus") { add(to: nil) }
-                        .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || name.count > 200)
-                } header: { Text(song.title) }
+                    PlaylistSongLabel(song: song)
+                }
                 if !lists.isEmpty {
                     Section("Your playlists") {
-                        ForEach(lists) { list in
+                        if matches.isEmpty { Text("No matching playlists").foregroundStyle(.secondary) }
+                        ForEach(matches) { list in
                             let alreadyAdded = list.hashes.contains(song.fileHash)
                             Button { add(to: list.id) } label: {
-                                Label(list.name, systemImage: alreadyAdded ? "checkmark.circle.fill" : "music.note.list")
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(list.name).foregroundStyle(.primary)
+                                        Text(alreadyAdded ? "Already added" : "\(list.hashes.count) tracks")
+                                            .font(.caption).foregroundStyle(.secondary)
+                                    }
+                                    Spacer()
+                                    Image(systemName: alreadyAdded ? "checkmark.circle.fill" : "plus.circle")
+                                        .foregroundStyle(.tint).accessibilityHidden(true)
+                                }
                             }.disabled(alreadyAdded)
+                            .accessibilityLabel(list.name)
                             .accessibilityValue(alreadyAdded ? "Already added" : "")
                         }
                     }
                 }
+                Section("New playlist") {
+                    TextField("Playlist name", text: $name)
+                    Button("Create and add", systemImage: "plus") { add(to: nil) }
+                        .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || name.count > 200)
+                }
                 if let message { Text(message).font(.footnote).foregroundStyle(.secondary) }
             }.navigationTitle("Add to playlist").soundlySurface()
+            .searchable(text: $search, prompt: "Find a playlist")
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } } }
         }
     }

@@ -5,6 +5,7 @@ import AVKit
 
 struct NowPlayingView: View {
     @Environment(PlaybackController.self) private var playback
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.dynamicTypeSize) private var textSize
     @Environment(\.colorScheme) private var colorScheme
@@ -27,14 +28,7 @@ struct NowPlayingView: View {
         GeometryReader { geometry in
             ScrollView {
                 VStack(spacing:0) {
-                    Button { artwork = true } label: {
-                        CoverView(artwork:playback.current?.artwork,size:coverSize(geometry.size),cornerRadius:20,fitArtwork:true)
-                            .fixedSize()
-                            .shadow(color:.black.opacity(0.18),radius:24,y:14)
-                    }.buttonStyle(.plain).frame(width:coverSize(geometry.size),height:coverSize(geometry.size))
-                        .accessibilityLabel("View full-screen artwork")
-                        .accessibilityIdentifier("expandArtwork").disabled(playback.current == nil)
-                        .padding(.bottom,22)
+                    artworkPanel(in: geometry.size).padding(.bottom, 22)
                     trackInformation
                     VStack(spacing:14) {
                         progress
@@ -53,9 +47,6 @@ struct NowPlayingView: View {
             NavigationStack { VisualizerSettingsView().toolbar { ToolbarItem(placement:.confirmationAction) { Button("Done") { visualizerSettings = false } } } }
         }
         .sheet(item: $playlistSong) { song in AddToPlaylistView(song: song) }
-        .sheet(isPresented:$lyrics) {
-            NavigationStack { LyricsView().toolbar { ToolbarItem(placement:.confirmationAction) { Button("Done") { lyrics = false } } } }
-        }
         .sheet(isPresented:$quality) {
             NavigationStack {
                 SignalPathView().toolbar {
@@ -74,6 +65,39 @@ struct NowPlayingView: View {
         .onChange(of:playback.audio.elapsed) { _, value in if !dragging { position = value } }
         .task(id:playback.current?.id) { position = playback.audio.elapsed; favorite = songModel()?.favorite ?? false }
     }
+    private func artworkPanel(in size: CGSize) -> some View {
+        let side = coverSize(size)
+        let panelWidth = textSize.isAccessibilitySize && lyrics ? min(460, size.width - 48) : side
+        let panelHeight = textSize.isAccessibilitySize && lyrics ? max(220, side) : side
+        func turn(from angle: Double) -> AnyTransition {
+            guard !reduceMotion else { return .identity }
+            return .opacity.combined(with:
+                .modifier(active: ArtworkTurn(angle: angle), identity: ArtworkTurn(angle: 0))
+            )
+        }
+        return ZStack {
+            if lyrics {
+                LyricsView(showArtwork: { setLyrics(false) }).transition(turn(from: -78))
+            } else {
+                Button { artwork = true } label: {
+                    CoverView(artwork: playback.current?.artwork, size: side, cornerRadius: 20, fitArtwork: true)
+                }.buttonStyle(.plain)
+                    .accessibilityLabel("View full-screen artwork")
+                    .accessibilityIdentifier("expandArtwork").disabled(playback.current == nil)
+                    .transition(turn(from: 78))
+            }
+        }
+        .frame(width: panelWidth, height: panelHeight)
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .shadow(color: .black.opacity(0.16), radius: 22, y: 12)
+    }
+
+    private func setLyrics(_ visible: Bool) {
+        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.34)) {
+            lyrics = visible
+        }
+    }
+
     private func coverSize(_ size:CGSize)->CGFloat {
         if textSize.isAccessibilitySize { return min(180,max(100,size.width*0.45)) }
         // Reserve room for a two-line title and accessible controls; the artwork remains square.
@@ -148,7 +172,7 @@ struct NowPlayingView: View {
             GeometryReader { geometry in
                 let fraction = min(1,max(0,position/max(0.001,playback.audio.duration)))
                 ZStack(alignment:.leading) {
-                    SourceVisualizer(progress:fraction, allowMotion: !dragging && !quality && !lyrics && !visualizerSettings && !queue && !artwork && playlistSong == nil)
+                    SourceVisualizer(progress:fraction, allowMotion: !dragging && !quality && !visualizerSettings && !queue && !artwork && playlistSong == nil)
                     if visualizerStyle != "Flow" || dragging {
                         Capsule().fill(Color.primary.opacity(dragging ? 0.95 : 0.7))
                             .frame(width:dragging ? 3 : 1.5,height:dragging ? 44 : 32)
@@ -197,7 +221,8 @@ struct NowPlayingView: View {
             iconButton("Repeat",symbol:playback.queue.repeatMode == .one ? "repeat.1" : "repeat",id:"repeatButton",active:playback.queue.repeatMode != .off) { playback.cycleRepeat() }
                 .accessibilityValue(playback.queue.repeatMode.rawValue)
             Spacer()
-            iconButton("Lyrics", symbol: "quote.bubble", id: "openLyrics", active: lyrics) { lyrics = true }
+            iconButton("Lyrics", symbol: "quote.bubble", id: "openLyrics", active: lyrics) { setLyrics(!lyrics) }
+                .accessibilityValue(lyrics ? "Showing lyrics" : "Showing artwork")
                 .disabled(playback.current == nil)
             Spacer()
             SystemRoutePicker().frame(width:44,height:44).accessibilityLabel("Choose audio output")
@@ -237,6 +262,18 @@ struct NowPlayingView: View {
     static func time(_ value:Double)->String {
         guard value.isFinite, value >= 0 else { return "0:00" }
         let seconds = Int(value); return String(format:"%d:%02d",seconds/60,seconds%60)
+    }
+}
+
+private struct ArtworkTurn: ViewModifier, @MainActor Animatable {
+    var angle: Double
+    var animatableData: Double {
+        get { angle }
+        set { angle = newValue }
+    }
+
+    func body(content: Content) -> some View {
+        content.rotation3DEffect(.degrees(angle), axis: (x: 0, y: 1, z: 0), perspective: 0.6)
     }
 }
 

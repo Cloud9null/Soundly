@@ -201,19 +201,26 @@ struct SongResults: View {
         .alert("Could not save favorite",isPresented:$saveError) { Button("OK",role:.cancel) {} }
     }
     private func row(_ song:Song,number:Int? = nil)->some View {
-        Button { select(song) } label: {
-            HStack(spacing:12) {
-                if let number { Text("\(number)").font(.caption.monospacedDigit()).foregroundStyle(.secondary).frame(minWidth:24) }
-                CoverView(artwork:song.artwork,size:52,cornerRadius:10)
-                VStack(alignment:.leading,spacing:4) {
-                    Text(song.title).foregroundStyle(.primary).lineLimit(1)
-                    Text(song.artist + " · " + song.album).font(.caption).foregroundStyle(.secondary).lineLimit(1)
-                    if !song.available { Text("Local file missing").font(.caption2).foregroundStyle(.secondary) }
-                }
-                Spacer(); if song.favorite { Image(systemName:"heart.fill").foregroundStyle(.tint) }
-            }.padding(.vertical,4)
-        }.buttonStyle(.plain).listRowBackground(Color.clear)
-        .contextMenu { Button("Add to playlist", systemImage: "text.badge.plus") { playlistSong = song } }
+        HStack(spacing: 8) {
+            Button { select(song) } label: {
+                HStack(spacing: 10) {
+                    if let number {
+                        Text("\(number)").font(.caption.monospacedDigit()).foregroundStyle(.secondary).frame(minWidth: 20)
+                    }
+                    PlaylistSongLabel(song: song, artworkSize: 52)
+                    Spacer(minLength: 0)
+                    if song.favorite { Image(systemName: "heart.fill").foregroundStyle(.tint) }
+                }.contentShape(Rectangle())
+            }.buttonStyle(.plain)
+                .contextMenu { Button("Add to playlist", systemImage: "text.badge.plus") { playlistSong = song } }
+            Button { playlistSong = song } label: {
+                Image(systemName: "text.badge.plus")
+                    .font(.body.weight(.medium)).foregroundStyle(.tint)
+                    .frame(width: 44, height: 44).contentShape(Rectangle())
+            }.buttonStyle(.plain)
+                .accessibilityLabel("Add \(song.title) to playlist")
+                .accessibilityIdentifier("libraryAddToPlaylist")
+        }.padding(.vertical, 4).listRowBackground(Color.clear)
         .swipeActions { Button(song.favorite ? "Unfavorite" : "Favorite",systemImage:"heart") {
             song.favorite.toggle()
             do { try context.save() } catch { context.rollback(); saveError = true }
@@ -340,7 +347,7 @@ struct SettingsView: View {
                 Text("Music stays on this device. No external artwork or metadata lookups. Imported music is excluded from device backups; keep your original files.").font(.footnote)
             }
             Section("About") {
-                LabeledContent("Version",value:"0.14.0 (14)")
+                LabeledContent("Version",value:"0.15.0 (15)")
                 Text("Built with Apple frameworks. No third-party runtime code.")
             }
         }.soundlySurface().navigationTitle("Settings")

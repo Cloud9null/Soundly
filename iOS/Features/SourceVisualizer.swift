@@ -1,6 +1,18 @@
 import SwiftUI
 import AVFoundation
 
+enum WaveformRhythm: String, CaseIterable {
+    case balanced = "Balanced", bass = "Bass", dynamics = "Dynamics"
+
+    var description: String {
+        switch self {
+        case .balanced: "Follows bass and transients."
+        case .bass: "Makes low-frequency hits stand out."
+        case .dynamics: "Follows changes in the track’s overall energy."
+        }
+    }
+}
+
 /// Bounded source analysis, independent of the playback graph and its samples.
 enum SourceEnvelope {
     struct Analysis: Sendable {
@@ -8,19 +20,26 @@ enum SourceEnvelope {
         let pulses: [Float]
         let interval: Double
 
-        func pulse(at seconds: Double) -> CGFloat {
-            interpolate(pulses, at: seconds)
+        var bass: [Float] = []
+        var energyScale: Float = 1
+
+        func pulse(at seconds: Double, rhythm: WaveformRhythm = .balanced) -> CGFloat {
+            switch rhythm {
+            case .balanced: interpolate(pulses, at: seconds)
+            case .bass: min(1, 1.2 * interpolate(bass, at: seconds))
+            case .dynamics: min(1, interpolate(levels, at: seconds) / CGFloat(energyScale))
+            }
         }
 
-        func flow(at seconds: Double) -> [CGFloat] {
+        func flow(at seconds: Double, rhythm: WaveformRhythm = .balanced) -> [CGFloat] {
             (0..<48).map { index in
                 let x = CGFloat(index) / 47
                 let time = seconds - Double(x) * 1.12
-                let hit = interpolate(pulses, at: time)
+                let hit = pulse(at: time, rhythm: rhythm)
                 let level = interpolate(levels, at: time)
-                let body = min(0.40, sqrt(max(0, level)) * 0.64)
+                let body = min(0.32, sqrt(max(0, level)) * 0.50)
                 let taper = pow(1 - x, 0.52)
-                return min(1, (body + hit * 1.15) * taper)
+                return min(1, (body + hit * 1.05) * taper)
             }
         }
 
@@ -85,7 +104,10 @@ enum SourceEnvelope {
             pulse = max(pulse * releaseDecay, min(1, 1.8 * accent + 0.18 * signal))
             return pulse
         }
-        return Analysis(levels: levels, pulses: pulses, interval: interval)
+        return Analysis(
+            levels: levels, pulses: pulses, interval: interval,
+            bass: bass.map { $0 / bassScale }, energyScale: levelScale
+        )
     }
     /// Area-weighted bins retain the timeline even when a very short file has fewer samples than pixels.
     static func display(_ samples:[Float],count:Int)->[CGFloat] {
@@ -115,6 +137,7 @@ struct SourceVisualizer:View, @MainActor Animatable {
     @AppStorage("waveformMotion") private var motionEnabled = true
     @AppStorage("visualizerStyle") private var style = "Flow"
     @AppStorage("visualizerColor") private var tint = "Mint"
+    @AppStorage("visualizerRhythm") private var rhythm: WaveformRhythm = .balanced
     @AppStorage("waveformRed") private var red = 0.18
     @AppStorage("waveformGreen") private var green = 0.8
     @AppStorage("waveformBlue") private var blue = 0.72
@@ -127,6 +150,9 @@ struct SourceVisualizer:View, @MainActor Animatable {
         case "Ocean": [.cyan,.blue]
         case "Amber": [.orange,.yellow]
         case "Rainbow": [.pink,.orange,.yellow,.mint,.cyan,.purple]
+        case "Cobalt": [.blue, .indigo, .purple]
+        case "Coral": [.orange, .pink, .red]
+        case "Lime": [.green, .mint, .yellow]
         default: [.mint,.cyan]
         }
     }
@@ -137,10 +163,12 @@ struct SourceVisualizer:View, @MainActor Animatable {
         TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !moving)) { _ in
             let elapsed = audio.elapsed + max(0, min(0.55, ProcessInfo.processInfo.systemUptime - audio.observedAt))
             let time = min(audio.duration, moving ? elapsed : audio.elapsed)
-            if style == "Flow", motionEnabled, !reduceMotion, let analysis, !samples.isEmpty {
-                flow(values: analysis.flow(at: allowMotion ? time : min(audio.duration, progress * audio.duration)))
+            if ["Flow", "Ribbon", "Pulse Bars"].contains(style),
+               motionEnabled, !reduceMotion, let analysis, !samples.isEmpty {
+                let moment = allowMotion ? time : min(audio.duration, progress * audio.duration)
+                flow(values: analysis.flow(at: moment, rhythm: rhythm))
             } else {
-                let pulse = moving ? analysis?.pulse(at: time) ?? 0 : 0
+                let pulse = moving ? analysis?.pulse(at: time, rhythm: rhythm) ?? 0 : 0
                 waveform(pulse: pulse)
             }
         }
@@ -174,6 +202,18 @@ struct SourceVisualizer:View, @MainActor Animatable {
             context.fill(played, with: .linearGradient(Gradient(colors: palette), startPoint: .zero,
                                                        endPoint: CGPoint(x: size.width, y: 0)))
 
+            let gradient = GraphicsContext.Shading.linearGradient(Gradient(colors: colors),
+                startPoint: .zero, endPoint: CGPoint(x: size.width, y: 0))
+            if style == "Ribbon" || style == "Pulse Bars" {
+                let signalSize = CGSize(width: size.width, height: max(6, baseline - 3))
+                var signal = context
+                let fade = GraphicsContext.Shading.linearGradient(
+                    Gradient(colors: [colors.first ?? .mint, colors.last ?? .cyan, .clear]),
+                    startPoint: .zero, endPoint: CGPoint(x: size.width, y: 0)
+                )
+                Self.draw(&signal, size: signalSize, values: values, style: style, shading: fade)
+                return
+            }
             let points = values.enumerated().map { index, value in
                 CGPoint(x: size.width * CGFloat(index) / CGFloat(values.count - 1),
                         y: baseline - 3 - value * (baseline - 6))
@@ -195,8 +235,6 @@ struct SourceVisualizer:View, @MainActor Animatable {
             let shade = palette.first ?? .mint
             context.fill(fill, with: .linearGradient(Gradient(colors: [shade.opacity(0.46), shade.opacity(0.035)]),
                                                      startPoint: .zero, endPoint: CGPoint(x: 0, y: baseline)))
-            let gradient = GraphicsContext.Shading.linearGradient(Gradient(colors: colors),
-                startPoint: .zero, endPoint: CGPoint(x: size.width, y: 0))
             if scheme == .dark {
                 var glow = context
                 glow.addFilter(.blur(radius: 3))
@@ -246,10 +284,13 @@ struct SourceVisualizer:View, @MainActor Animatable {
     private static func draw(_ context:inout GraphicsContext,size:CGSize,values:[CGFloat],style:String,shading:GraphicsContext.Shading) {
         guard !values.isEmpty else { return }
         let middle = size.height/2
-        if style == "Bars" || style == "Orbit" {
-            for i in stride(from:0,to:values.count,by:3) {
-                let h = max(1,values[i]*(size.height-6))
-                let rect = CGRect(x:CGFloat(i)*size.width/CGFloat(values.count),y:(size.height-h)/2,width:max(1,size.width/CGFloat(values.count)*1.7),height:h)
+        if style == "Bars" || style == "Orbit" || style == "Pulse Bars" {
+            let step = style == "Pulse Bars" && values.count < 60 ? 1 : 3
+            for i in stride(from: 0, to: values.count, by: step) {
+                let h = max(1, values[i] * (size.height - 6))
+                let unit = size.width / CGFloat(values.count)
+                let rect = CGRect(x: CGFloat(i) * unit, y: (size.height - h) / 2,
+                                  width: max(1, unit * CGFloat(step) * 0.58), height: h)
                 context.fill(Path(roundedRect:rect,cornerRadius:2),with:shading)
             }
             return
@@ -267,6 +308,11 @@ struct SourceVisualizer:View, @MainActor Animatable {
             };return line
         }
         let upper = edge(-1,reverse:false)
+        if style == "Ribbon" {
+            context.stroke(upper, with: shading, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+            context.stroke(edge(1, reverse: false), with: shading, style: StrokeStyle(lineWidth: 1.2, lineCap: .round))
+            return
+        }
         var silhouette = upper
         if style == "Wave" { silhouette.addLine(to:CGPoint(x:size.width,y:middle));silhouette.addLine(to:CGPoint(x:0,y:middle)) }
         else {
@@ -283,13 +329,15 @@ struct SourceVisualizer:View, @MainActor Animatable {
     }
 }
 enum PlayerBackdrop {
-    static let names = ["Artwork","Theme","Aurora","Sunset","Ocean","Rose"]
+    static let names = ["Artwork", "Theme", "Aurora", "Sunset", "Ocean", "Rose", "Haze", "Garden"]
     static func colors(_ name:String)->[Color]? {
         switch name {
         case "Aurora": [.indigo,.purple,.mint]
         case "Sunset": [.pink,.orange,.purple]
         case "Ocean": [.blue,.cyan,.indigo]
         case "Rose": [.pink,.purple,.red]
+        case "Haze": [.cyan, .indigo, .pink]
+        case "Garden": [.mint, .green, .yellow]
         default: nil
         }
     }
@@ -297,6 +345,7 @@ enum PlayerBackdrop {
 struct VisualizerSettingsView:View {
     @AppStorage("visualizerStyle") private var style = "Flow"
     @AppStorage("visualizerColor") private var tint = "Mint"
+    @AppStorage("visualizerRhythm") private var rhythm: WaveformRhythm = .balanced
     @AppStorage("playerBackdrop") private var backdrop = "Artwork"
     @AppStorage("waveformMotion") private var motion = true
     @AppStorage("waveformRed") private var red = 0.18
@@ -313,15 +362,27 @@ struct VisualizerSettingsView:View {
             Section("Waveform") {
                 SourceVisualizer(progress:0.55, allowMotion:false).frame(height:64)
                 Toggle("Move with the music", isOn: $motion)
-                Picker("Shape",selection:$style) { ForEach(["Flow","Wave","Mirror","Bars","Off","Orbit"],id:\.self) { Text($0 == "Orbit" ? "Bars (legacy Orbit)" : $0) } }
-                Picker("Color",selection:$tint) { ForEach(["Mint","Rose","Ocean","Amber","Rainbow","Custom"],id:\.self) { Text($0) } }
+                Picker("Shape", selection: $style) {
+                    ForEach(["Flow", "Ribbon", "Pulse Bars", "Wave", "Mirror", "Bars", "Off", "Orbit"], id: \.self) {
+                        Text($0 == "Orbit" ? "Bars (legacy Orbit)" : $0)
+                    }
+                }
+                Picker("Rhythm response", selection: $rhythm) {
+                    ForEach(WaveformRhythm.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                }.disabled(!motion || style == "Off")
+                if motion && style != "Off" {
+                    Text(rhythm.description).font(.footnote).foregroundStyle(.secondary)
+                }
+                Picker("Color", selection: $tint) {
+                    ForEach(["Mint", "Rose", "Ocean", "Amber", "Rainbow", "Cobalt", "Coral", "Lime", "Custom"], id: \.self) { Text($0) }
+                }
                 ColorPicker("Custom color",selection:custom,supportsOpacity:false)
             }
             Section("Player background") {
                 Picker("Background",selection:$backdrop) { ForEach(PlayerBackdrop.names,id:\.self) { Text($0) } }.accessibilityIdentifier("playerBackdropPicker")
             }
             Section {
-                Text("Flow draws a moving trail from the song’s bass and accents. Drag anywhere across the waveform to seek. Turn off motion to hold the display steady.").font(.footnote)
+                Text("Drag across the waveform to seek. Flow, Ribbon and Pulse Bars show a short trail of the music as it plays.").font(.footnote)
                 Text("Use your iPhone volume buttons or Control Center to adjust volume.").font(.footnote)
             }
         }.navigationTitle("Player appearance").soundlySurface()

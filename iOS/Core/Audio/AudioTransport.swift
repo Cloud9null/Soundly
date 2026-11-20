@@ -30,7 +30,7 @@ struct AudioObservation: Sendable {
 }
 
 /// Serialized control plane. AVFoundation schedules/decodes the file on its own workers.
-/// No custom realtime render callback, whole-file PCM allocation, EQ, gain or crossfade.
+/// Visualization runs independently of the playback graph.
 actor AudioTransport {
     private var engine = AVAudioEngine()
     private var player = AVAudioPlayerNode()
@@ -46,6 +46,9 @@ actor AudioTransport {
     private var rateRequestNote: String?
     private var graphPath = AudioGraphPath.unknown
     private var requestedRate: Double?
+    private var requestedBuffer: TimeInterval?
+    private var originalBuffer: TimeInterval?
+    private var bufferRequestNote: String?
     private var settings = AudioSettings()
     private var equalizer: AVAudioUnitEQ?
     func setSettings(_ value:AudioSettings) { settings = value.validated }
@@ -65,7 +68,7 @@ actor AudioTransport {
               source.processingFormat.sampleRate > 0 else { throw CocoaError(.fileReadCorruptFile) }
         if active { try AVAudioSession.sharedInstance().setActive(false); active = false }
         configured = false; rateRequestNote = nil
-        graphPath = .unknown; requestedRate = nil
+        graphPath = .unknown; requestedRate = nil; requestedBuffer = nil; bufferRequestNote = nil
         sourceInfo = try SourceFormatInspector.inspect(source,url:url)
         file = source
         offset = Self.frame(position,rate:source.processingFormat.sampleRate,length:source.length)
@@ -77,19 +80,49 @@ actor AudioTransport {
         let session = AVAudioSession.sharedInstance()
         try session.setCategory(.playback,mode:.default,options:[])
         rateRequestNote = nil
-        let requested = sourceInfo.pcm?.sampleRate ?? source.processingFormat.sampleRate
-        requestedRate = requested
-        do { try session.setPreferredSampleRate(requested) }
-        catch { rateRequestNote = "The native-rate request was rejected. Playback uses the session rate reported below." }
-        try session.setActive(true); active = true
+        bufferRequestNote = nil
+        let nativeRate = sourceInfo.pcm?.sampleRate ?? source.processingFormat.sampleRate
+        func routeRate() -> Double {
+            settings.requestedRate(source: nativeRate, usb: session.currentRoute.outputs.contains { $0.portType == .usbAudio })
+        }
+        func requestRate(_ rate: Double) {
+            requestedRate = rate
+            do {
+                try session.setPreferredSampleRate(rate)
+                rateRequestNote = nil
+            } catch {
+                rateRequestNote = "iOS rejected the sample-rate request."
+            }
+        }
+        let initialRate = routeRate()
+        requestRate(initialRate)
+        requestedBuffer = settings.buffer.duration
+        if let requestedBuffer {
+            if originalBuffer == nil {
+                let preferred = session.preferredIOBufferDuration
+                let effective = session.ioBufferDuration
+                originalBuffer = preferred > 0 ? preferred : effective > 0 ? effective : 0.023
+            }
+            do { try session.setPreferredIOBufferDuration(requestedBuffer) }
+            catch { bufferRequestNote = "iOS rejected the I/O buffer request." }
+        } else if let originalBuffer {
+            do {
+                try session.setPreferredIOBufferDuration(originalBuffer)
+                self.originalBuffer = nil
+            } catch { bufferRequestNote = "iOS could not restore the previous I/O buffer preference." }
+        }
+        try session.setActive(true)
+        active = true
+        let activeRate = routeRate()
+        if activeRate != initialRate { requestRate(activeRate) }
         // A fresh graph prevents an old main-mixer connection surviving a direct-path switch.
         engine = AVAudioEngine(); player = AVAudioPlayerNode(); attached = false
         let hardware = engine.outputNode.outputFormat(forBus:0)
         guard hardware.sampleRate > 0, hardware.channelCount > 0 else {
             throw NSError(domain:"Soundly.Audio",code:1,userInfo:[NSLocalizedDescriptionKey:"No active audio output format is available."])
         }
-        if session.sampleRate != requested {
-            rateRequestNote = "Requested \(String(format:"%.1f",requested/1000)) kHz; iOS activated \(String(format:"%.1f",session.sampleRate/1000)) kHz. The selected route did not provide the requested rate."
+        if rateRequestNote == nil, session.sampleRate != activeRate {
+            rateRequestNote = "The route activated at a different rate than requested."
         }
         if !attached { engine.attach(player); attached = true }
         equalizer = nil
@@ -106,7 +139,7 @@ actor AudioTransport {
             engine.mainMixerNode.outputVolume = 1; player.volume = 1
             equalizer = eq; graphPath = .equalizer
         } else {
-            graphPath = PCMGraph.connect(engine:engine,player:player,format:source.processingFormat,matchingOutput:hardware)
+            graphPath = PCMGraph.connect(engine:engine,player:player,format:source.processingFormat,matchingOutput:settings.usesDirectPath ? hardware : nil)
         }
         configured = true
     }
@@ -178,7 +211,7 @@ actor AudioTransport {
         active = false
     }
     func resetServices() {
-        stop(); engine = AVAudioEngine(); player = AVAudioPlayerNode(); file = nil; sourceInfo = SourceAudioInfo(); attached = false; configured = false; graphPath = .unknown; requestedRate = nil
+        stop(); engine = AVAudioEngine(); player = AVAudioPlayerNode(); file = nil; sourceInfo = SourceAudioInfo(); attached = false; configured = false; graphPath = .unknown; requestedRate = nil; requestedBuffer = nil; originalBuffer = nil; bufferRequestNote = nil
     }
     func observation() -> AudioObservation {
         var value = AudioObservation()
@@ -186,6 +219,8 @@ actor AudioTransport {
         value.signalPath.source = sourceInfo
         value.signalPath.graphPath = graphPath
         value.signalPath.requestedRate = requestedRate
+        value.signalPath.requestedBuffer = requestedBuffer
+        value.signalPath.bufferRequestNote = bufferRequestNote
         value.signalPath.snapshot.source = sourceInfo.pcm
         value.signalPath.snapshot.sourceIsLossless = sourceInfo.lossless
         value.playing = playing; value.ended = ended
@@ -215,6 +250,7 @@ actor AudioTransport {
             value.signalPath.snapshot.sessionIsActive = true
             value.signalPath.systemVolume = session.outputVolume
             value.signalPath.bufferDuration = session.ioBufferDuration
+            value.signalPath.outputLatency = session.outputLatency
             value.sessionRate = session.sampleRate; value.sessionChannels = session.outputNumberOfChannels
             value.route = session.currentRoute.outputs.map(\.portName).joined(separator:", ")
             value.routeTypes = session.currentRoute.outputs.map { $0.portType.rawValue }

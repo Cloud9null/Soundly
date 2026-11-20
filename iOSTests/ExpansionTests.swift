@@ -26,6 +26,25 @@ final class ExpansionTests:XCTestCase {
         value.integrity = false; XCTAssertTrue(value.validated.processing)
         value.gains = [.nan,100,-100]; XCTAssertEqual(value.validated.gains,[0,6,-12,0,0])
     }
+    func testUpgradePreservesAudioPreferencesAndGatesFixedUSBRate() throws {
+        let legacy = Data(#"{"integrity":false,"equalizer":true,"gains":[0,0,3,0,0]}"#.utf8)
+        var settings = try JSONDecoder().decode(AudioSettings.self, from: legacy)
+        XCTAssertTrue(settings.processing)
+        XCTAssertEqual(settings.usbRate, .source)
+        XCTAssertEqual(settings.buffer, .automatic)
+        XCTAssertTrue(settings.usesDirectPath)
+
+        settings.usbRate = .standard
+        settings.buffer = .stable
+        XCTAssertEqual(settings.requestedRate(source: 96_000, usb: true), 48_000)
+        XCTAssertEqual(settings.requestedRate(source: 96_000, usb: false), 96_000)
+        settings.integrity = true
+        settings.preferDirect = false
+        XCTAssertEqual(settings.requestedRate(source: 96_000, usb: true), 96_000)
+        XCTAssertTrue(settings.usesDirectPath)
+        XCTAssertFalse(settings.processing)
+        XCTAssertEqual(try JSONDecoder().decode(AudioSettings.self, from: JSONEncoder().encode(settings)), settings)
+    }
     func testPlaylistRoundtripPreservesOrderAndRejectsInvalidExchange() throws {
         let first = LocalPlaylist(name:"Travel",hashes:["b","a"])
         let bytes = try JSONEncoder().encode(PlaylistExchange(playlists:[first,LocalPlaylist(name:"Home")]))
@@ -85,6 +104,10 @@ final class ExpansionTests:XCTestCase {
         XCTAssertGreaterThan(hit.max() ?? 0, 0.75)
         XCTAssertGreaterThan(trail.max() ?? 0, 0.45)
         XCTAssertLessThan(trail.first ?? 1, trail.max() ?? 0)
+        XCTAssertEqual(waveform.pulse(at: 0.12, rhythm: .bass), 0)
+        XCTAssertEqual(waveform.pulse(at: 0.12, rhythm: .dynamics), 0)
+        XCTAssertGreaterThan(waveform.pulse(at: 0.30, rhythm: .bass), 0.8)
+        XCTAssertGreaterThan(waveform.pulse(at: 0.30, rhythm: .dynamics), 0.8)
     }
 }
 

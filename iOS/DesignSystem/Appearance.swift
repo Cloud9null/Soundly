@@ -3,10 +3,11 @@ import SwiftUI
 enum SoundlyTheme: String, CaseIterable, Identifiable {
     case system, light, dark, oled, ocean, sunset, amethyst, forest, rose, graphite, ivory, midnight
     case porcelain, mist, linen, matcha, lavender, petal
+    case daylight, seafoam, dune, lilac, ink, copper
     var id: String { rawValue }
     var name: String { rawValue.capitalized }
     var scheme: ColorScheme? {
-        switch self { case .system: nil; case .light, .ivory, .porcelain, .mist, .linen, .matcha, .lavender, .petal: .light; default: .dark }
+        switch self { case .system: nil; case .light, .ivory, .porcelain, .mist, .linen, .matcha, .lavender, .petal, .daylight, .seafoam, .dune, .lilac: .light; default: .dark }
     }
     var accent: Color {
         switch self {
@@ -18,6 +19,12 @@ enum SoundlyTheme: String, CaseIterable, Identifiable {
         case .matcha: Color(red: 0.24, green: 0.40, blue: 0.19)
         case .lavender: Color(red: 0.39, green: 0.29, blue: 0.63)
         case .petal: Color(red: 0.60, green: 0.23, blue: 0.36)
+        case .daylight: Color(red: 0.22, green: 0.32, blue: 0.58)
+        case .seafoam: Color(red: 0.03, green: 0.43, blue: 0.36)
+        case .dune: Color(red: 0.49, green: 0.29, blue: 0.16)
+        case .lilac: Color(red: 0.37, green: 0.25, blue: 0.59)
+        case .ink: Color(red: 0.53, green: 0.72, blue: 1)
+        case .copper: Color(red: 1, green: 0.64, blue: 0.43)
         case .midnight: .indigo; default: .mint
         }
     }
@@ -39,6 +46,12 @@ enum SoundlyTheme: String, CaseIterable, Identifiable {
         case .matcha: Color(red: 0.947, green: 0.975, blue: 0.933)
         case .lavender: Color(red: 0.962, green: 0.947, blue: 0.988)
         case .petal: Color(red: 0.990, green: 0.948, blue: 0.961)
+        case .daylight: Color(red: 0.979, green: 0.981, blue: 0.990)
+        case .seafoam: Color(red: 0.925, green: 0.979, blue: 0.961)
+        case .dune: Color(red: 0.986, green: 0.949, blue: 0.888)
+        case .lilac: Color(red: 0.984, green: 0.968, blue: 1)
+        case .ink: Color(red: 0.035, green: 0.061, blue: 0.104)
+        case .copper: Color(red: 0.130, green: 0.072, blue: 0.055)
         }
     }
 }

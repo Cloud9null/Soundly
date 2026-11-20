@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SignalPathView: View {
+    var showsAudioSettings = true
     @Environment(PlaybackController.self) private var playback
     private var report: LiveSignalPath { playback.audio.signalPath }
     private var snapshot: SignalPathSnapshot { report.snapshot }
@@ -13,6 +14,13 @@ struct SignalPathView: View {
                 Label(report.rateSummary,systemImage:"waveform.path").font(.headline).accessibilityIdentifier("rateSummary")
                 Text(report.rateComparison).font(.subheadline.monospaced()).accessibilityIdentifier("outputRateComparison")
                 outputSummary
+                if showsAudioSettings {
+                    NavigationLink {
+                        AudioSettingsView()
+                    } label: {
+                        Label("DAC & Equalizer Settings", systemImage: "slider.horizontal.3")
+                    }.buttonStyle(.bordered)
+                }
                 if !playback.audio.playing { Label("Playback is paused or stopped. Values describe observed configuration, not verified output samples.",systemImage:"pause.circle").font(.footnote) }
                 chain
                 stage("1",title:"Source",evidence:"FILE METADATA",icon:"doc") {
@@ -37,7 +45,10 @@ struct SignalPathView: View {
                     LabeledContent("Requested rate",value:Self.rate(report.requestedRate))
                     LabeledContent("Effective session rate",value:Self.rate(snapshot.sessionSampleRate))
                     LabeledContent("Output channels",value:snapshot.sessionChannels.map(String.init) ?? "Unknown")
-                    LabeledContent("I/O buffer",value:report.bufferDuration.map { String(format:"%.2f ms",$0*1000) } ?? "Unknown")
+                    LabeledContent("Requested I/O buffer", value: Self.milliseconds(report.requestedBuffer, fallback: "Automatic"))
+                    LabeledContent("Effective I/O buffer", value: Self.milliseconds(report.bufferDuration))
+                    LabeledContent("iOS output latency", value: Self.milliseconds(report.outputLatency))
+                    if let note = report.bufferRequestNote { Text(note).font(.footnote) }
                     LabeledContent("System volume",value:report.systemVolume.map { String(format:"%.0f%%",$0*100) } ?? "Unknown")
                     Text("System volume alone does not identify downstream digital gain or physical DAC processing.").font(.footnote).foregroundStyle(.secondary)
                     if let note = playback.audio.rateRequestNote { Text(note).font(.footnote) }
@@ -145,6 +156,9 @@ struct SignalPathView: View {
             content()
         }.frame(maxWidth:.infinity,alignment:.leading).padding(18)
             .background(.tint.opacity(0.06),in:RoundedRectangle(cornerRadius:22))
+    }
+    static func milliseconds(_ value: TimeInterval?, fallback: String = "Unknown") -> String {
+        value.map { String(format: "%.2f ms", $0 * 1_000) } ?? fallback
     }
     static func rate(_ value:Double?)->String { value.map { String(format:"%.1f kHz",$0/1000) } ?? "Unknown" }
     static func format(_ format:PCMFormat?)->String {
